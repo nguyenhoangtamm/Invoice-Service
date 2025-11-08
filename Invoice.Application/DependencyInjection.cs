@@ -24,6 +24,13 @@ public static class DependencyInjection
         services.AddTransient<IRoleService, RoleService>();
         services.AddTransient<IMenuService, MenuService>();
 
+        // New services
+        services.AddTransient<IOrganizationService, OrganizationService>();
+        services.AddTransient<IApiKeyService, ApiKeyService>();
+        services.AddTransient<IInvoiceBatchService, InvoiceBatchService>();
+        services.AddTransient<IInvoiceService, InvoiceService>();
+        services.AddTransient<IInvoiceLineService, InvoiceLineService>();
+
         // Register FluentValidation validators from this assembly
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 

@@ -26,6 +26,9 @@ public static class DependencyInjection
         // Register background services
         services.AddHostedService<TokenCleanupService>();
 
+        // Register IHttpContextAccessor to allow audit fields to be populated from current user
+        services.AddHttpContextAccessor();
+
         // Register DbContext (PostgreSQL as default if connection string provided). Ensure you have a connection string named "DefaultConnection" in appsettings.
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (!string.IsNullOrEmpty(connectionString))

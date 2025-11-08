@@ -24,14 +24,16 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAuditabl
 
     public Task UpdateAsync(T entity)
     {
-        T exist = _dbContext.Set<T>().Find(entity.Id);
+        T exist = _dbContext.Set<T>().Find(entity.Id)!;
         _dbContext.Entry(exist).CurrentValues.SetValues(entity);
         return Task.CompletedTask;
     }
 
     public Task DeleteAsync(T entity)
     {
-        _dbContext.Set<T>().Remove(entity);
+        // Soft-delete: mark the entity as deleted and update it
+        entity.IsDeleted = true;
+        _dbContext.Set<T>().Update(entity);
         return Task.CompletedTask;
     }
 
