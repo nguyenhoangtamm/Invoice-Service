@@ -22,7 +22,7 @@ public static class RoleAndUserSeeder
         }
         catch (Exception ex)
    {
-  throw new Exception("An error occurred while seeding the database with roles and users.", ex);
+
         }
     }
 
