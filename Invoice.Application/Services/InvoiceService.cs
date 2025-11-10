@@ -5,18 +5,29 @@ using Invoice.Domain.Entities;
 using Invoice.Domain.Interfaces;
 using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
+using Invoice.Domain.Configurations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Nethereum.ABI.Model;
+using Nethereum.Hex.HexTypes;
+using Nethereum.Web3;
+using System.Linq;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Invoice.Application.Services;
 
 public class InvoiceService : BaseService, IInvoiceService
 {
+    private readonly IWeb3 _web3;
+    private readonly BlockchainConfiguration _config;
+
     public InvoiceService(IHttpContextAccessor httpContextAccessor, ILogger<InvoiceService> logger,
-        IUnitOfWork unitOfWork, IMapper mapper)
+        IUnitOfWork unitOfWork, IMapper mapper, IWeb3 web3, BlockchainConfiguration config)
         : base(httpContextAccessor, logger, unitOfWork, mapper)
     {
+        _web3 = web3;
+        _config = config;
     }
 
     public async Task<Result<List<InvoiceResponse>>> GetAll(CancellationToken cancellationToken)
@@ -226,5 +237,59 @@ public class InvoiceService : BaseService, IInvoiceService
             LogError($"Error deleting invoice id: {id}", ex);
             return Result<int>.Failure("Failed to delete invoice");
         }
+    }
+
+    public async Task<Result<VerifyInvoiceResponse>> VerifyInvoiceAsync(int invoiceId, CancellationToken cancellationToken)
+    {
+        var invoice = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>()
+            .Entities
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == invoiceId, cancellationToken);
+        if (invoice == null)
+            return Result<VerifyInvoiceResponse>.Failure("Invoice not found");
+        var merkleRoot = invoice.Batch.MerkleRoot;
+        var merkleProof = invoice.MerkleProof.Split(',');
+        var invoiceCid = invoice.Cid;
+
+        var contract = _web3.Eth.GetContract(_config.ContractAbi, _config.ContractAddress);
+        // Get the verify function
+        var verifyFunction = contract.GetFunction("verifyInvoiceByCID");
+        // Get the getMetadataURI
+        var getMetadataURIFunction = contract.GetFunction("getMetadataURIByCID");
+        // Convert merkle root to bytes32
+        var merkleRootBytes = Convert.FromHexString(merkleRoot.StartsWith("0x") ? merkleRoot[2..] : merkleRoot);
+
+        // Convert merkle proof array
+        var proofArray = merkleProof.Select(p => Convert.FromHexString(p.StartsWith("0x") ? p[2..] : p)).ToArray();
+
+        // Get current gas price
+        var gasPrice = await _web3.Eth.GasPrice.SendRequestAsync();
+        var maxGasPrice = new HexBigInteger(_config.MaxGasPrice);
+
+        if (gasPrice.Value > maxGasPrice.Value)
+        {
+            gasPrice = maxGasPrice;
+        }
+
+        // Send transaction
+        var isValid = await verifyFunction.CallAsync<bool>(
+            merkleRootBytes,
+            invoiceCid,
+            proofArray);
+        // getMetadataURI
+        var metadataUri = await getMetadataURIFunction.CallAsync<string>(merkleRoot);
+        // call api to get the invoice data from ipfs
+        var httpClient = new HttpClient();
+        var response = await httpClient.GetAsync(metadataUri, cancellationToken);
+        var result = new VerifyInvoiceResponse
+        {
+            IsValid = isValid,
+            Message = isValid ? "Invoice is valid" : "Invoice is invalid",
+            OffChainInvoice = invoice,
+            OnChainInvoice = invoice,
+        };
+
+        _logger.LogInformation("Invoice {InvoiceCid} verified successfully", invoiceCid);
+        return Result<VerifyInvoiceResponse>.Success(result, "Invoice verified successfully");
     }
 }

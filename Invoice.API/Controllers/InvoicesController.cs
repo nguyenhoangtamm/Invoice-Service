@@ -113,4 +113,20 @@ public class InvoicesController : ApiControllerBase
             return StatusCode(500, "Internal server error");
         }
     }
+
+    [HttpGet("verify-invoice/{invoiceId}")]
+    public async Task<ActionResult<VerifyInvoiceResponse>> VerifyInvoice(int invoiceId)
+    {
+        try
+        {
+            var result = await _invoiceService.VerifyInvoiceAsync(invoiceId, CancellationToken.None);
+            if (result.Succeeded) return Ok(result);
+            return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error verifying invoice line id {invoiceId}", ex);
+            return StatusCode(500, "Internal server error");
+        }
+    }
 }
