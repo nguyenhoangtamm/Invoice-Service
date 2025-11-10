@@ -35,4 +35,7 @@ files
 UniversityData/
 .fake
 UploadedFiles/
+# Sensitive/Local config
+appsettings.Development.json
+secrets.json
 
