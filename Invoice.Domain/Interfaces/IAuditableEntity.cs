@@ -8,5 +8,9 @@ public interface IAuditableEntity : IEntity
     string? UpdatedBy { get; set; }
     DateTime? UpdatedDate { get; set; }
     public bool IsDeleted { get; set; }
+
+    // FK references to Users.Id per ERD
+    public int? CreatedById { get; set; }
+    public int? UpdatedById { get; set; }
 }
 

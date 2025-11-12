@@ -10,12 +10,20 @@ public class User : IdentityUser<int>, IAuditableEntity
     public string? FullName { get; set; }
     public UserStatus? Status { get; set; }
 
+    // Profile fields inline for ERD convenience
+    public string? FullName { get; set; }
+    public string? Phone { get; set; }
+
     // Audit fields from IAuditableEntity
     public string? CreatedBy { get; set; }
     public DateTime? CreatedDate { get; set; }
     public string? UpdatedBy { get; set; }
     public DateTime? UpdatedDate { get; set; }
     public bool IsDeleted { get; set; }
+
+    // FK ids to users for audits
+    public int? CreatedById { get; set; }
+    public int? UpdatedById { get; set; }
 
     public virtual Role Role { get; set; } = null!;
     
@@ -30,5 +38,6 @@ public class User : IdentityUser<int>, IAuditableEntity
 
     public virtual ICollection<Invoice> IssuedInvoices { get; set; } = new List<Invoice>();
 }
+
 
 
