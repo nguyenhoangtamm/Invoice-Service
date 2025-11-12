@@ -7,6 +7,7 @@ namespace Invoice.Domain.Entities;
 public class User : IdentityUser<int>, IAuditableEntity
 {
     public int RoleId { get; set; }
+    public string? FullName { get; set; }
     public UserStatus? Status { get; set; }
 
     // Audit fields from IAuditableEntity
@@ -24,6 +25,10 @@ public class User : IdentityUser<int>, IAuditableEntity
 
     // Profile navigation
     public virtual Profile? Profile { get; set; }
+
+    public virtual ICollection<Organization> Organizations { get; set; } = new List<Organization>();
+
+    public virtual ICollection<Invoice> IssuedInvoices { get; set; } = new List<Invoice>();
 }
 
 

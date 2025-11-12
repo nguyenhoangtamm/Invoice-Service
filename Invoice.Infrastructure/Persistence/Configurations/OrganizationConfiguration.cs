@@ -1,29 +1,41 @@
+﻿using Invoice.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Invoice.Domain.Entities;
 
 namespace Invoice.Infrastructure.Persistence.Configurations;
 
 public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
 {
-    public void Configure(EntityTypeBuilder<Organization> builder)
+    public void Configure(EntityTypeBuilder<Organization> b)
     {
-        builder.ToTable("Organizations");
+        b.ToTable("Organizations");
 
-        builder.Property(o => o.OrganizationName).HasMaxLength(250).IsRequired();
-        builder.Property(o => o.OrganizationTaxId).HasMaxLength(100);
-        builder.Property(o => o.OrganizationAddress).HasMaxLength(500);
-        builder.Property(o => o.OrganizationPhone).HasMaxLength(50);
-        builder.Property(o => o.OrganizationEmail).HasMaxLength(250);
-        builder.Property(o => o.OrganizationBankAccount).HasMaxLength(200);
+        b.HasKey(x => x.Id);
 
-        builder.Property(o => o.CreatedBy).HasMaxLength(100);
-        builder.Property(o => o.UpdatedBy).HasMaxLength(100);
-        builder.Property(o => o.IsDeleted).HasDefaultValue(false);
+        b.Property(x => x.OrganizationName)
+            .IsRequired()
+            .HasMaxLength(200);
 
-        builder.HasOne(o => o.User)
-               .WithMany()
-               .HasForeignKey(o => o.UserId)
-               .OnDelete(DeleteBehavior.SetNull);
+        b.Property(x => x.OrganizationTaxId)
+            .HasMaxLength(50);
+
+        b.Property(x => x.OrganizationAddress)
+            .HasMaxLength(500);
+
+        b.Property(x => x.OrganizationPhone)
+            .HasMaxLength(30);
+
+        b.Property(x => x.OrganizationEmail)
+            .HasMaxLength(200);
+
+        b.Property(x => x.OrganizationBankAccount)
+            .HasMaxLength(100);
+
+        // Owner
+        b.HasOne(x => x.User)
+            .WithMany(u => u.Organizations)
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
+

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Invoice.API.Controllers;
 
-[Authorize]
+//[Authorize]
 public class InvoicesController : ApiControllerBase
 {
     private readonly IInvoiceService _invoiceService;

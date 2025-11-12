@@ -13,6 +13,7 @@ using Nethereum.ABI.Model;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3;
 using System.Linq;
+using System.Text.Json;
 using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Invoice.Application.Services;
@@ -281,12 +282,31 @@ public class InvoiceService : BaseService, IInvoiceService
         // call api to get the invoice data from ipfs
         var httpClient = new HttpClient();
         var response = await httpClient.GetAsync(metadataUri, cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+        var uriResponse = JsonSerializer.Deserialize<UriResponse>(content);
+        if (uriResponse == null || uriResponse.Cids == null)
+        {
+            return Result<VerifyInvoiceResponse>.Failure("Failed to retrieve batch metadata");
+        }
+        var cidDetail = uriResponse.Cids.FirstOrDefault(c => c.InvoiceId == invoiceId);
+        if (cidDetail == null)
+        {
+            return Result<VerifyInvoiceResponse>.Failure("Invoice not found in batch");
+        }
+        var invoiceUrl = $"https://ipfs.io/ipfs/{cidDetail.Cid}";
+        var invoiceResponse = await httpClient.GetAsync(invoiceUrl, cancellationToken);
+        var invoiceContent = await invoiceResponse.Content.ReadAsStringAsync(cancellationToken);
+        var onChainInvoice = JsonSerializer.Deserialize<Invoice.Domain.Entities.Invoice>(invoiceContent);
+        if (onChainInvoice == null)
+        {
+            return Result<VerifyInvoiceResponse>.Failure("Failed to retrieve on-chain invoice data");
+        }
         var result = new VerifyInvoiceResponse
         {
             IsValid = isValid,
             Message = isValid ? "Invoice is valid" : "Invoice is invalid",
             OffChainInvoice = invoice,
-            OnChainInvoice = invoice,
+            OnChainInvoice = onChainInvoice,
         };
 
         _logger.LogInformation("Invoice {InvoiceCid} verified successfully", invoiceCid);

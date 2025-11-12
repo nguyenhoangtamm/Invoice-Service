@@ -1,32 +1,33 @@
+﻿using Invoice.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Invoice.Infrastructure.Persistence.Configurations;
 
-public class InvoiceLineConfiguration : IEntityTypeConfiguration<Invoice.Domain.Entities.InvoiceLine>
+public class InvoiceLineConfiguration : IEntityTypeConfiguration<InvoiceLine>
 {
-    public void Configure(EntityTypeBuilder<Invoice.Domain.Entities.InvoiceLine> builder)
+    public void Configure(EntityTypeBuilder<InvoiceLine> b)
     {
-        builder.ToTable("InvoiceLines");
+        b.ToTable("Invoice_Lines");
 
-        builder.Property(l => l.LineNumber).IsRequired();
-        builder.Property(l => l.Description).HasMaxLength(1000);
-        builder.Property(l => l.Unit).HasMaxLength(50);
+        b.HasKey(x => x.Id);
 
-        builder.Property(l => l.Quantity).HasPrecision(18, 2);
-        builder.Property(l => l.UnitPrice).HasPrecision(18, 2);
-        builder.Property(l => l.Discount).HasPrecision(18, 2);
-        builder.Property(l => l.TaxRate).HasPrecision(5, 2);
-        builder.Property(l => l.TaxAmount).HasPrecision(18, 2);
-        builder.Property(l => l.LineTotal).HasPrecision(18, 2);
+        b.Property(x => x.Description).HasMaxLength(1000);
+        b.Property(x => x.Unit).HasMaxLength(50);
 
-        builder.HasOne<Invoice.Domain.Entities.Invoice>(l => l.Invoice)
-               .WithMany(i => i.Lines)
-               .HasForeignKey(l => l.InvoiceId)
-               .OnDelete(DeleteBehavior.Cascade);
+        b.Property(x => x.Quantity).HasPrecision(18, 3);
+        b.Property(x => x.UnitPrice).HasPrecision(18, 2);
+        b.Property(x => x.Discount).HasPrecision(18, 2);
+        b.Property(x => x.TaxRate).HasPrecision(5, 2);
+        b.Property(x => x.TaxAmount).HasPrecision(18, 2);
+        b.Property(x => x.LineTotal).HasPrecision(18, 2);
 
-        builder.Property(l => l.CreatedBy).HasMaxLength(100);
-        builder.Property(l => l.UpdatedBy).HasMaxLength(100);
-        builder.Property(l => l.IsDeleted).HasDefaultValue(false);
+        b.HasOne(x => x.Invoice)
+            .WithMany(i => i.Lines)
+            .HasForeignKey(x => x.InvoiceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Một Invoice không được trùng LineNumber
+        b.HasIndex(x => new { x.InvoiceId, x.LineNumber }).IsUnique();
     }
 }

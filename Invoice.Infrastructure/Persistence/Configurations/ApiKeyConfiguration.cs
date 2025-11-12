@@ -1,27 +1,27 @@
+﻿using Invoice.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Invoice.Domain.Entities;
 
 namespace Invoice.Infrastructure.Persistence.Configurations;
 
 public class ApiKeyConfiguration : IEntityTypeConfiguration<ApiKey>
 {
-    public void Configure(EntityTypeBuilder<ApiKey> builder)
+    public void Configure(EntityTypeBuilder<ApiKey> b)
     {
-        builder.ToTable("ApiKeys");
+        b.ToTable("Api_Keys");
 
-        builder.Property(a => a.KeyHash).HasMaxLength(500).IsRequired();
-        builder.Property(a => a.Name).HasMaxLength(250);
-        builder.Property(a => a.Active).HasDefaultValue(true);
-        builder.Property(a => a.RevokedAt);
+        b.HasKey(x => x.Id);
 
-        builder.Property(a => a.CreatedBy).HasMaxLength(100);
-        builder.Property(a => a.UpdatedBy).HasMaxLength(100);
-        builder.Property(a => a.IsDeleted).HasDefaultValue(false);
+        b.Property(x => x.KeyHash)
+            .IsRequired()
+            .HasMaxLength(256);
 
-        builder.HasOne(a => a.Organization)
-               .WithMany(o => o.ApiKeys)
-               .HasForeignKey(a => a.OrganizationId)
-               .OnDelete(DeleteBehavior.Cascade);
+        b.Property(x => x.Name)
+            .HasMaxLength(200);
+
+        b.HasOne(x => x.Organization)
+            .WithMany(o => o.ApiKeys)
+            .HasForeignKey(x => x.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
