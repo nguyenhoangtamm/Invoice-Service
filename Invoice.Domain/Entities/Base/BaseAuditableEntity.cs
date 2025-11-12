@@ -8,5 +8,9 @@ public abstract class BaseAuditableEntity : BaseEntity, IAuditableEntity
     public string? UpdatedBy { get; set; }
     public DateTime? UpdatedDate { get; set; }
     public bool IsDeleted { get; set; }
+
+    // FK references to Users.Id per ERD
+    public int? CreatedById { get; set; }
+    public int? UpdatedById { get; set; }
 }
 
