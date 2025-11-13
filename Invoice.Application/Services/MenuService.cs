@@ -187,7 +187,7 @@ public class MenuService : BaseService, IMenuService
         }
     }
 
-    public async Task<Result<PaginatedResult<MenuResponse>>> GetWithPagination(GetMenuWithPagination query, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<MenuResponse>> GetWithPagination(GetMenuWithPagination query, CancellationToken cancellationToken)
     {
         try
         {
@@ -203,20 +203,19 @@ public class MenuService : BaseService, IMenuService
             // Apply keyword filter if provided
             if (!string.IsNullOrEmpty(query.Keyword))
             {
-                menusQuery = menusQuery.Where(m => m.Name.Contains(query.Keyword) || 
+                menusQuery = menusQuery.Where(m => m.Name.Contains(query.Keyword) ||
                                         m.Path.Contains(query.Keyword));
             }
 
             return await menusQuery.OrderBy(x => x.Order)
                 .ProjectTo<MenuResponse>(_mapper.ConfigurationProvider)
-                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken)
-                .ContinueWith(t => Result<PaginatedResult<MenuResponse>>.Success(t.Result, "Menus retrieved"), cancellationToken);
+                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken);
 
         }
         catch (Exception ex)
         {
             LogError("Error getting menus with pagination", ex);
-            return Result<PaginatedResult<MenuResponse>>.Failure("Failed to get menus with pagination");
+            throw new Exception("An error occurred while retrieving menu with pagination");
         }
     }
 

@@ -11,5 +11,5 @@ public interface IOrganizationService
     Task<Result<int>> Delete(int id, CancellationToken cancellationToken);
     Task<Result<OrganizationResponse>> GetById(int id, CancellationToken cancellationToken);
     Task<Result<List<OrganizationResponse>>> GetAll(CancellationToken cancellationToken);
-    Task<Result<PaginatedResult<OrganizationResponse>>> GetWithPagination(GetOrganizationWithPagination request, CancellationToken cancellationToken);
+    Task<PaginatedResult<OrganizationResponse>> GetWithPagination(GetOrganizationWithPagination request, CancellationToken cancellationToken);
 }

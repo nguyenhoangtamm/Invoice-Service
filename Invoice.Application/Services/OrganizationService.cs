@@ -137,7 +137,7 @@ public class OrganizationService : BaseService, IOrganizationService
         }
     }
 
-    public async Task<Result<PaginatedResult<OrganizationResponse>>> GetWithPagination(GetOrganizationWithPagination query, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<OrganizationResponse>> GetWithPagination(GetOrganizationWithPagination query, CancellationToken cancellationToken)
     {
         try
         {
@@ -151,20 +151,19 @@ public class OrganizationService : BaseService, IOrganizationService
             if (!string.IsNullOrEmpty(query.Keyword))
             {
                 var kw = query.Keyword.ToLower();
-                organizationsQuery = organizationsQuery.Where(o => o.OrganizationName.ToLower().Contains(kw) || 
+                organizationsQuery = organizationsQuery.Where(o => o.OrganizationName.ToLower().Contains(kw) ||
                                         (o.OrganizationTaxId ?? string.Empty).ToLower().Contains(kw));
             }
 
             return await organizationsQuery.OrderBy(x => x.CreatedDate)
                 .ProjectTo<OrganizationResponse>(_mapper.ConfigurationProvider)
-                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken)
-                .ContinueWith(t => Result<PaginatedResult<OrganizationResponse>>.Success(t.Result, "Organizations retrieved"), cancellationToken);
+                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken);
 
         }
         catch (Exception ex)
         {
             LogError("Error getting organizations with pagination", ex);
-            return Result<PaginatedResult<OrganizationResponse>>.Failure("Failed to get organizations with pagination");
+            throw new Exception("An error occurred while retrieving orgnization with pagination");
         }
     }
 }

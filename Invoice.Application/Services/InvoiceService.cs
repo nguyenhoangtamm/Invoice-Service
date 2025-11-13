@@ -89,7 +89,7 @@ public class InvoiceService : BaseService, IInvoiceService
                     var taxAmount = ln.TaxRate.HasValue ? Math.Round(ln.Quantity * ln.UnitPrice * (ln.TaxRate.Value / 100m), 2) : 0m;
                     var discount = ln.Discount ?? 0m;
                     var lineTotal = Math.Round(ln.Quantity * ln.UnitPrice - discount + taxAmount, 2);
-                    
+
                     var line = new Invoice.Domain.Entities.InvoiceLine
                     {
                         LineNumber = ln.LineNumber,
@@ -218,7 +218,7 @@ public class InvoiceService : BaseService, IInvoiceService
         }
     }
 
-    public async Task<Result<PaginatedResult<InvoiceResponse>>> GetWithPagination(GetInvoiceWithPagination query, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<InvoiceResponse>> GetWithPagination(GetInvoiceWithPagination query, CancellationToken cancellationToken)
     {
         try
         {
@@ -235,19 +235,18 @@ public class InvoiceService : BaseService, IInvoiceService
             if (!string.IsNullOrWhiteSpace(query.Keyword))
             {
                 var k = query.Keyword.Trim().ToLower();
-                invoicesQuery = invoicesQuery.Where(i => i.InvoiceNumber.ToLower().Contains(k) || 
+                invoicesQuery = invoicesQuery.Where(i => i.InvoiceNumber.ToLower().Contains(k) ||
                                                          (i.CustomerName != null && i.CustomerName.ToLower().Contains(k)));
             }
 
             return await invoicesQuery.OrderByDescending(x => x.IssuedDate)
                 .ProjectTo<InvoiceResponse>(_mapper.ConfigurationProvider)
-                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken)
-                .ContinueWith(t => Result<PaginatedResult<InvoiceResponse>>.Success(t.Result, "Invoices retrieved"), cancellationToken);
+                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError("Error getting invoices with pagination", ex);
-            return Result<PaginatedResult<InvoiceResponse>>.Failure("Failed to get invoices with pagination");
+            throw new Exception("An error occurred while retrieving invoice with pagination");
         }
     }
 

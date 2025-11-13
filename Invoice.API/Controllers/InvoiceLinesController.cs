@@ -13,25 +13,18 @@ public class InvoiceLinesController(ILogger<InvoiceLinesController> logger, IInv
     private readonly IInvoiceLineService _invoiceLineService = invoiceLineService;
 
     [HttpPost("create")]
-    public async Task<IActionResult> Create([FromBody] CreateInvoiceLineRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<int>>> Create([FromBody] CreateInvoiceLineRequest request, CancellationToken cancellationToken)
     {
         try
         {
             LogInformation($"Creating invoice line");
 
-            var result = await _invoiceLineService.Create(request, cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _invoiceLineService.Create(request, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError("Error creating invoice line", ex);
-            return StatusCode(500, "An error occurred while creating the invoice line");
+            return StatusCode(500, Result<int>.Failure("An error occurred while creating the invoice line"));
         }
     }
 
@@ -43,48 +36,34 @@ public class InvoiceLinesController(ILogger<InvoiceLinesController> logger, IInv
         {
             LogInformation($"Updating invoice line with ID: {id}");
 
-            var result = await _invoiceLineService.Update(id, request, cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _invoiceLineService.Update(id, request, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError($"Error updating invoice line with ID: {id}", ex);
-            return StatusCode(500, "An error occurred while updating the invoice line");
+            return StatusCode(500, Result<int>.Failure("An error occurred while updating the invoice line"));
         }
     }
 
     [HttpPost]
     [Route("delete/{id}")]
-    public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<int>>> Delete([FromRoute] int id, CancellationToken cancellationToken)
     {
         try
         {
             LogInformation($"Deleting invoice line with ID: {id}");
 
-            var result = await _invoiceLineService.Delete(id, cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _invoiceLineService.Delete(id, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError($"Error deleting invoice line with ID: {id}", ex);
-            return StatusCode(500, "An error occurred while deleting the invoice line");
+            return StatusCode(500, Result<int>.Failure("An error occurred while deleting the invoice line"));
         }
     }
 
     [HttpGet("get-by-id/{id}")]
-    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<InvoiceLineResponse>>> GetById(int id, CancellationToken cancellationToken)
     {
         try
         {
@@ -102,77 +81,56 @@ public class InvoiceLinesController(ILogger<InvoiceLinesController> logger, IInv
         catch (Exception ex)
         {
             LogError($"Error getting invoice line with ID: {id}", ex);
-            return StatusCode(500, "An error occurred while retrieving the invoice line");
+            return StatusCode(500, Result<InvoiceLineResponse>.Failure("An error occurred while retrieving the invoice line"));
         }
     }
 
     [HttpGet]
     [Route("get-all")]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
+    public async Task<ActionResult<Result<List<InvoiceLineResponse>>>> GetAll(CancellationToken cancellationToken = default)
     {
         try
         {
             LogInformation("Getting all invoice lines");
 
-            var result = await _invoiceLineService.GetAll(cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _invoiceLineService.GetAll(cancellationToken);
         }
         catch (Exception ex)
         {
             LogError("Error getting all invoice lines", ex);
-            return StatusCode(500, "An error occurred while retrieving invoice lines");
+            return StatusCode(500, Result<List<InvoiceLineResponse>>.Failure("An error occurred while retrieving invoice lines"));
         }
     }
 
     [HttpGet("get-pagination")]
-    public async Task<IActionResult> GetInvoiceLinesWithPagination([FromQuery] GetInvoiceLineWithPagination request, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<PaginatedResult<InvoiceLineResponse>>> GetInvoiceLinesWithPagination([FromQuery] GetInvoiceLineWithPagination request, CancellationToken cancellationToken = default)
     {
         try
         {
             LogInformation($"Getting invoice lines with pagination - Page: {request.PageNumber}, Size: {request.PageSize}");
 
-            var result = await _invoiceLineService.GetWithPagination(request, cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _invoiceLineService.GetWithPagination(request, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError("Error getting invoice lines with pagination", ex);
-            return StatusCode(500, "An error occurred while retrieving invoice lines");
+            return StatusCode(500, Result<PaginatedResult<InvoiceLineResponse>>.Failure("An error occurred while retrieving invoice lines"));
         }
     }
 
     [HttpGet("by-invoice/{invoiceId}")]
-    public async Task<IActionResult> GetByInvoiceId([FromRoute] int invoiceId, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<List<InvoiceLineResponse>>>> GetByInvoiceId([FromRoute] int invoiceId, CancellationToken cancellationToken)
     {
         try
         {
             LogInformation($"Getting invoice lines for invoice ID: {invoiceId}");
 
-            var result = await _invoiceLineService.GetByInvoiceId(invoiceId, cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _invoiceLineService.GetByInvoiceId(invoiceId, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError($"Error getting invoice lines for invoice ID: {invoiceId}", ex);
-            return StatusCode(500, "An error occurred while retrieving invoice lines");
+            return StatusCode(500, Result<List<InvoiceLineResponse>>.Failure("An error occurred while retrieving invoice lines"));
         }
     }
 }

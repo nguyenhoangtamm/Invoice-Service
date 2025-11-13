@@ -13,25 +13,18 @@ public class OrganizationsController(ILogger<OrganizationsController> logger, IO
     private readonly IOrganizationService _organizationService = organizationService;
 
     [HttpPost("create")]
-    public async Task<IActionResult> Create([FromBody] CreateOrganizationRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<int>>> Create([FromBody] CreateOrganizationRequest request, CancellationToken cancellationToken)
     {
         try
         {
             LogInformation($"Creating organization");
 
-            var result = await _organizationService.Create(request, cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _organizationService.Create(request, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError("Error creating organization", ex);
-            return StatusCode(500, "An error occurred while creating the organization");
+            return StatusCode(500, Result<int>.Failure("An error occurred while creating the organization"));
         }
     }
 
@@ -43,48 +36,34 @@ public class OrganizationsController(ILogger<OrganizationsController> logger, IO
         {
             LogInformation($"Updating organization with ID: {id}");
 
-            var result = await _organizationService.Update(id, request, cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _organizationService.Update(id, request, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError($"Error updating organization with ID: {id}", ex);
-            return StatusCode(500, "An error occurred while updating the organization");
+            return StatusCode(500, Result<int>.Failure("An error occurred while updating the organization"));
         }
     }
 
     [HttpPost]
     [Route("delete/{id}")]
-    public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<int>>> Delete([FromRoute] int id, CancellationToken cancellationToken)
     {
         try
         {
             LogInformation($"Deleting organization with ID: {id}");
 
-            var result = await _organizationService.Delete(id, cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _organizationService.Delete(id, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError($"Error deleting organization with ID: {id}", ex);
-            return StatusCode(500, "An error occurred while deleting the organization");
+            return StatusCode(500, Result<int>.Failure("An error occurred while deleting the organization"));
         }
     }
 
     [HttpGet("get-by-id/{id}")]
-    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<OrganizationResponse>>> GetById(int id, CancellationToken cancellationToken)
     {
         try
         {
@@ -102,54 +81,40 @@ public class OrganizationsController(ILogger<OrganizationsController> logger, IO
         catch (Exception ex)
         {
             LogError($"Error getting organization with ID: {id}", ex);
-            return StatusCode(500, "An error occurred while retrieving the organization");
+            return StatusCode(500, Result<OrganizationResponse>.Failure("An error occurred while retrieving the organization"));
         }
     }
 
     [HttpGet]
     [Route("get-all")]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
+    public async Task<ActionResult<Result<List<OrganizationResponse>>>> GetAll(CancellationToken cancellationToken = default)
     {
         try
         {
             LogInformation("Getting all organizations");
 
-            var result = await _organizationService.GetAll(cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _organizationService.GetAll(cancellationToken);
         }
         catch (Exception ex)
         {
             LogError("Error getting all organizations", ex);
-            return StatusCode(500, "An error occurred while retrieving organizations");
+            return StatusCode(500, Result<List<OrganizationResponse>>.Failure("An error occurred while retrieving organizations"));
         }
     }
 
     [HttpGet("get-pagination")]
-    public async Task<IActionResult> GetOrganizationsWithPagination([FromQuery] GetOrganizationWithPagination request, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<PaginatedResult<OrganizationResponse>>> GetOrganizationsWithPagination([FromQuery] GetOrganizationWithPagination request, CancellationToken cancellationToken = default)
     {
         try
         {
             LogInformation($"Getting organizations with pagination - Page: {request.PageNumber}, Size: {request.PageSize}");
 
-            var result = await _organizationService.GetWithPagination(request, cancellationToken);
-
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            return await _organizationService.GetWithPagination(request, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError("Error getting organizations with pagination", ex);
-            return StatusCode(500, "An error occurred while retrieving organizations");
+            return StatusCode(500, Result<PaginatedResult<OrganizationResponse>>.Failure("An error occurred while retrieving organizations"));
         }
     }
 }

@@ -178,7 +178,7 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
         }
     }
 
-    public async Task<Result<PaginatedResult<InvoiceBatchResponse>>> GetWithPagination(GetInvoiceBatchWithPagination query, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<InvoiceBatchResponse>> GetWithPagination(GetInvoiceBatchWithPagination query, CancellationToken cancellationToken)
     {
         try
         {
@@ -192,13 +192,13 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
             return await batchesQuery.OrderBy(x => x.CreatedDate)
                 .ProjectTo<InvoiceBatchResponse>(_mapper.ConfigurationProvider)
                 .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken)
-                .ContinueWith(t => Result<PaginatedResult<InvoiceBatchResponse>>.Success(t.Result, "Batches retrieved"), cancellationToken);
+                .ConfigureAwait(false);
 
         }
         catch (Exception ex)
         {
             LogError("Error getting batches with pagination", ex);
-            return Result<PaginatedResult<InvoiceBatchResponse>>.Failure("Failed to get batches with pagination");
+            throw new Exception("An error occurred while retrieving invoice batch with pagination");
         }
     }
 }

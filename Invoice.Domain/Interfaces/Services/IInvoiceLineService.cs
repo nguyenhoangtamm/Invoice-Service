@@ -12,5 +12,5 @@ public interface IInvoiceLineService
     Task<Result<InvoiceLineResponse>> GetById(int id, CancellationToken cancellationToken);
     Task<Result<List<InvoiceLineResponse>>> GetAll(CancellationToken cancellationToken);
     Task<Result<List<InvoiceLineResponse>>> GetByInvoiceId(int invoiceId, CancellationToken cancellationToken);
-    Task<Result<PaginatedResult<InvoiceLineResponse>>> GetWithPagination(GetInvoiceLineWithPagination request, CancellationToken cancellationToken);
+    Task<PaginatedResult<InvoiceLineResponse>> GetWithPagination(GetInvoiceLineWithPagination request, CancellationToken cancellationToken);
 }

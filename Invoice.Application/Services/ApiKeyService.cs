@@ -150,7 +150,7 @@ public class ApiKeyService : BaseService, IApiKeyService
             return Result<List<ApiKeyResponse>>.Failure("Failed to get api keys");
         }
     }
-    public async Task<Result<PaginatedResult<ApiKeyResponse>>> GetWithPagination(GetApiKeyWithPagination query, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<ApiKeyResponse>> GetWithPagination(GetApiKeyWithPagination query, CancellationToken cancellationToken)
     {
         try
         {
@@ -164,13 +164,13 @@ public class ApiKeyService : BaseService, IApiKeyService
             return await apiKeysQuery.OrderBy(x => x.CreatedDate)
                 .ProjectTo<ApiKeyResponse>(_mapper.ConfigurationProvider)
                 .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken)
-                .ContinueWith(t => Result<PaginatedResult<ApiKeyResponse>>.Success(t.Result, "Api keys retrieved"), cancellationToken);
+                .ConfigureAwait(false);
 
         }
         catch (Exception ex)
         {
             LogError("Error getting api keys with pagination", ex);
-            return Result<PaginatedResult<ApiKeyResponse>>.Failure("Failed to get api keys with pagination");
+            throw new Exception("An error occurred while retrieving api key with pagination");
         }
     }
 

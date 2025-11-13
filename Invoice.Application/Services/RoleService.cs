@@ -192,7 +192,7 @@ public class RoleService : BaseService, IRoleService
         }
     }
 
-    public async Task<Result<object>> GetRolesWithPagination(GetRolesWithPaginationQuery query, CancellationToken cancellationToken)
+    public async Task<object> GetRolesWithPagination(GetRolesWithPaginationQuery query, CancellationToken cancellationToken)
     {
         try
         {

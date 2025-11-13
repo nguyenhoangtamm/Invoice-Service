@@ -170,7 +170,7 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
         }
     }
 
-    public async Task<Result<PaginatedResult<InvoiceLineResponse>>> GetWithPagination(GetInvoiceLineWithPagination query, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<InvoiceLineResponse>> GetWithPagination(GetInvoiceLineWithPagination query, CancellationToken cancellationToken)
     {
         try
         {
@@ -183,14 +183,13 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
             }
             return await invoiceLinesQuery.OrderBy(x => x.CreatedDate)
                 .ProjectTo<InvoiceLineResponse>(_mapper.ConfigurationProvider)
-                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken)
-                .ContinueWith(t => Result<PaginatedResult<InvoiceLineResponse>>.Success(t.Result, "Invoice lines retrieved"), cancellationToken);
+                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken);
 
         }
         catch (Exception ex)
         {
             LogError("Error getting invoice lines with pagination", ex);
-            return Result<PaginatedResult<InvoiceLineResponse>>.Failure("Failed to get invoice lines with pagination");
+            throw new Exception("An error occurred while retrieving invoice line with pagination");
         }
     }
 }

@@ -11,7 +11,7 @@ public interface IUserService
     Task<Result<int>> Delete(int id, CancellationToken cancellationToken);
     Task<Result<GetUserDto>> GetById(int id, CancellationToken cancellationToken);
     Task<Result<List<GetAllUsersDto>>> GetAll(CancellationToken cancellationToken);
-    Task<Result<PaginatedResult<GetUsersWithPaginationDto>>> GetUsersWithPagination(GetUsersWithPaginationQuery query, CancellationToken cancellationToken);
+    Task<PaginatedResult<GetUsersWithPaginationDto>> GetUsersWithPagination(GetUsersWithPaginationQuery query, CancellationToken cancellationToken);
     Task<Result<GetUserDto>> GetMe(CancellationToken cancellationToken);
     Task<Result<DashboardStatsDto>> GetDashboardStats(CancellationToken cancellationToken);
 }
