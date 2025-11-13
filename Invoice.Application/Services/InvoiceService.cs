@@ -56,8 +56,8 @@ public class InvoiceService : BaseService, IInvoiceService
             var repo = _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>();
             IQueryable<Invoice.Domain.Entities.Invoice> q = repo.Entities.AsNoTracking().Include(i => i.Lines);
 
-            if (query.TenantOrganizationId.HasValue)
-                q = q.Where(i => i.TenantOrganizationId == query.TenantOrganizationId.Value);
+            if (query.OrganizationId.HasValue)
+                q = q.Where(i => i.OrganizationId == query.OrganizationId.Value);
 
             if (!string.IsNullOrWhiteSpace(query.Keyword))
             {
@@ -123,7 +123,7 @@ public class InvoiceService : BaseService, IInvoiceService
                 InvoiceNumber = request.InvoiceNumber,
                 FormNumber = request.FormNumber,
                 Serial = request.Serial,
-                TenantOrganizationId = request.TenantOrganizationId,
+                OrganizationId = request.TenantOrganizationId,
                 IssuedByUserId = request.IssuedByUserId,
                 SellerName = request.SellerName,
                 SellerTaxId = request.SellerTaxId,
@@ -137,7 +137,7 @@ public class InvoiceService : BaseService, IInvoiceService
                 CustomerEmail = request.CustomerEmail,
                 Status = request.Status,
                 IssuedDate = request.IssuedDate,
-                Subtotal = request.Subtotal,
+                SubTotal = request.Subtotal,
                 TaxAmount = request.TaxAmount,
                 DiscountAmount = request.DiscountAmount,
                 TotalAmount = request.TotalAmount,

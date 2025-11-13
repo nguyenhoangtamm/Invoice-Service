@@ -31,7 +31,7 @@ public record CreateInvoiceRequest
     public string? CustomerPhone { get; init; }
     public string? CustomerEmail { get; init; }
 
-    public string? Status { get; init; }
+    public int Status { get; init; }
     public DateTime? IssuedDate { get; init; }
 
     public decimal Subtotal { get; init; }
@@ -67,6 +67,6 @@ public record GetInvoicesQuery
 {
     public int PageNumber { get; init; } = 1;
     public int PageSize { get; init; } = 10;
-    public int? TenantOrganizationId { get; init; }
+    public int? OrganizationId { get; init; }
     public string? Keyword { get; init; }
 }
