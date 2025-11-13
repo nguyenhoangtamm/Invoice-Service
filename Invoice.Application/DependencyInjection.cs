@@ -26,6 +26,11 @@ public static class DependencyInjection
         services.AddTransient<IAuthService, AuthService>();
         services.AddTransient<IRoleService, RoleService>();
         services.AddTransient<IMenuService, MenuService>();
+        services.AddTransient<IOrganizationService, OrganizationService>();
+        services.AddTransient<IInvoiceService, InvoiceService>();
+        services.AddTransient<IInvoiceLineService, InvoiceLineService>();
+        services.AddTransient<IInvoiceBatchService, InvoiceBatchService>();
+        services.AddTransient<IApiKeyService, ApiKeyService>();
 
         // New services
         services.AddTransient<IOrganizationService, OrganizationService>();

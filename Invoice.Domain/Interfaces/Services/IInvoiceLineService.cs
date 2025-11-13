@@ -6,9 +6,9 @@ namespace Invoice.Domain.Interfaces.Services;
 
 public interface IInvoiceLineService
 {
-    Task<Result<List<InvoiceLineResponse>>> GetAll(CancellationToken cancellationToken);
-    Task<Result<InvoiceLineResponse>> GetById(int id, CancellationToken cancellationToken);
-    Task<Result<int>> Create(int invoiceId, InvoiceLineRequest request, CancellationToken cancellationToken);
-    Task<Result<int>> Update(int id, InvoiceLineRequest request, CancellationToken cancellationToken);
+    Task<Result<int>> Create(CreateInvoiceLineRequest request, CancellationToken cancellationToken);
+    Task<Result<int>> Update(int id, UpdateInvoiceLineRequest request, CancellationToken cancellationToken);
     Task<Result<int>> Delete(int id, CancellationToken cancellationToken);
+    Task<Result<InvoiceLineResponse>> GetById(int id, CancellationToken cancellationToken);
+    Task<Result<List<InvoiceLineResponse>>> GetByInvoiceId(int invoiceId, CancellationToken cancellationToken);
 }

@@ -1,4 +1,5 @@
 ﻿using Invoice.Domain.Entities.Base;
+using Invoice.Domain.Enums;
 
 namespace Invoice.Domain.Entities;
 
@@ -28,7 +29,7 @@ public class Invoice : BaseAuditableEntity
     public string? CustomerPhone { get; set; }
     public string? CustomerEmail { get; set; }
 
-    public int Status { get; set; }
+    public InvoiceStatus Status { get; set; }
     public DateTime? IssuedDate { get; set; }
 
     // Amounts

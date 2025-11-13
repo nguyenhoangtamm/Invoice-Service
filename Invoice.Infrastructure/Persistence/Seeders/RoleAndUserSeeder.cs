@@ -150,15 +150,15 @@ public static class RoleAndUserSeeder
             // Create Profile for Regular User
             var userProfile = new Profile
         {
-      UserId = regularUser.Id,
-      Fullname = "Test User",
-      Email = regularUserEmail,
-             Gender = "Male",
-      BirthDate = new DateTime(1990, 1, 1),
-           Address = "123 Test Street, Test City",
-     PhoneNumber = "+84-123456789",
-      Bio = "This is a test user account",
-     CreatedDate = DateTime.UtcNow
+            UserId = regularUser.Id,
+            Fullname = "Test User",
+            Email = regularUserEmail,
+            Gender = "Male",
+            BirthDate = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            Address = "123 Test Street, Test City",
+            PhoneNumber = "+84-123456789",
+            Bio = "This is a test user account",
+            CreatedDate = DateTime.UtcNow
        };
 
   await context.Profiles.AddAsync(userProfile);

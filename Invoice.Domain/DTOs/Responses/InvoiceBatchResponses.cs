@@ -1,18 +1,19 @@
 using Invoice.Domain.Common.Mappings;
-using Invoice.Domain.Entities;
+using Invoice.Domain.Enums;
+using System;
+using System.Collections.Generic;
 
 namespace Invoice.Domain.DTOs.Responses;
 
-public class InvoiceBatchResponse : IMapFrom<InvoiceBatch>
+public record InvoiceBatchResponse : IMapFrom<Invoice.Domain.Entities.InvoiceBatch>
 {
-    public int Id { get; set; }
-    public string? BatchId { get; set; }
-    public int Count { get; set; }
-    public string? MerkleRoot { get; set; }
-    public string? BatchCid { get; set; }
-
-    public string? CreatedBy { get; set; }
-    public DateTime? CreatedDate { get; set; }
-    public string? UpdatedBy { get; set; }
-    public DateTime? UpdatedDate { get; set; }
+    public int Id { get; init; }
+    public string? BatchId { get; init; }
+    public int Count { get; init; }
+    public string? MerkleRoot { get; init; }
+    public string? BatchCid { get; init; }
+    public BatchStatus Status { get; init; }
+    public string? TxHash { get; init; }
+    public long? BlockNumber { get; init; }
+    public DateTime? ConfirmedAt { get; init; }
 }

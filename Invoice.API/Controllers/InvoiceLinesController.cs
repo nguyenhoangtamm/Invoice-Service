@@ -2,99 +2,54 @@ using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Invoice.API.Controllers;
 
-[Authorize]
-public class InvoiceLinesController : ApiControllerBase
+public class InvoiceLinesController(ILogger<InvoiceLinesController> logger, IInvoiceLineService invoiceLineService) : ApiControllerBase(logger)
 {
-    private readonly IInvoiceLineService _lineService;
+    private readonly IInvoiceLineService _invoiceLineService = invoiceLineService;
 
-    public InvoiceLinesController(ILogger<InvoiceLinesController> logger, IInvoiceLineService lineService)
-        : base(logger)
+    [HttpPost("create")]
+    public async Task<IActionResult> Create([FromBody] CreateInvoiceLineRequest request, CancellationToken cancellationToken)
     {
-        _lineService = lineService;
+        var result = await _invoiceLineService.Create(request, cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return BadRequest(result);
     }
 
-    [HttpGet]
-    public async Task<ActionResult<Result<List<InvoiceLineResponse>>>> GetAll(CancellationToken cancellationToken)
+    [HttpPost]
+    [Route("update/{id}")]
+    public async Task<ActionResult<Result<int>>> Update([FromRoute] int id, [FromBody] UpdateInvoiceLineRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _lineService.GetAll(cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError("Error getting invoice lines", ex);
-            return StatusCode(500, "Internal server error");
-        }
+        if (id != request.Id) return BadRequest("ID mismatch");
+        var result = await _invoiceLineService.Update(id, request, cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return BadRequest(result);
+    }
+
+    [HttpPost]
+    [Route("delete/{id}")]
+    public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
+    {
+        var result = await _invoiceLineService.Delete(id, cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return BadRequest(result);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Result<InvoiceLineResponse>>> GetById(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _lineService.GetById(id, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return NotFound(result);
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error getting invoice line id {id}", ex);
-            return StatusCode(500, "Internal server error");
-        }
+        var result = await _invoiceLineService.GetById(id, cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return NotFound(result);
     }
 
-    [HttpPost("invoice/{invoiceId}")]
-    public async Task<ActionResult<Result<int>>> Create(int invoiceId, [FromBody] InvoiceLineRequest request, CancellationToken cancellationToken)
+    [HttpGet("by-invoice/{invoiceId}")]
+    public async Task<IActionResult> GetByInvoiceId([FromRoute] int invoiceId, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _lineService.Create(invoiceId, request, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError("Error creating invoice line", ex);
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    [HttpPut("{id}")]
-    public async Task<ActionResult<Result<int>>> Update(int id, [FromBody] InvoiceLineRequest request, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var result = await _lineService.Update(id, request, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error updating invoice line id {id}", ex);
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<ActionResult<Result<int>>> Delete(int id, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var result = await _lineService.Delete(id, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error deleting invoice line id {id}", ex);
-            return StatusCode(500, "Internal server error");
-        }
+        var result = await _invoiceLineService.GetByInvoiceId(invoiceId, cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return BadRequest(result);
     }
 }

@@ -2,121 +2,62 @@ using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Invoice.API.Controllers;
 
-[Authorize]
-public class OrganizationsController : ApiControllerBase
+public class OrganizationsController(ILogger<OrganizationsController> logger, IOrganizationService organizationService) : ApiControllerBase(logger)
 {
-    private readonly IOrganizationService _organizationService;
+    private readonly IOrganizationService _organizationService = organizationService;
 
-    public OrganizationsController(ILogger<OrganizationsController> logger, IOrganizationService organizationService)
-        : base(logger)
+    [HttpPost("create")]
+    public async Task<IActionResult> Create([FromBody] CreateOrganizationRequest request, CancellationToken cancellationToken)
     {
-        _organizationService = organizationService;
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<Result<List<OrganizationResponse>>>> GetAll(CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation("Getting all organizations");
-            var result = await _organizationService.GetAll(cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError("Error getting organizations", ex);
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    [HttpGet("paged")]
-    public async Task<ActionResult<Result<PaginatedResult<OrganizationResponse>>>> GetPaged([FromQuery] GetOrganizationsQuery query, CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation("Getting organizations paged");
-            var result = await _organizationService.GetWithPagination(query, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError("Error getting organizations paged", ex);
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Result<OrganizationResponse>>> GetById(int id, CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation($"Getting organization by id: {id}");
-            var result = await _organizationService.GetById(id, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return NotFound(result);
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error getting organization by id: {id}", ex);
-            return StatusCode(500, "Internal server error");
-        }
+        var result = await _organizationService.Create(request, cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return BadRequest(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult<Result<int>>> Create([FromBody] CreateOrganizationRequest request, CancellationToken cancellationToken)
+    [Route("update/{id}")]
+    public async Task<ActionResult<Result<int>>> Update([FromRoute] int id, [FromBody] UpdateOrganizationRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            LogInformation("Creating organization");
-            var result = await _organizationService.Create(request, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError("Error creating organization", ex);
-            return StatusCode(500, "Internal server error");
-        }
+        if (id != request.Id) return BadRequest("ID mismatch");
+        var result = await _organizationService.Update(id, request, cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return BadRequest(result);
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<Result<int>>> Update(int id, [FromBody] UpdateOrganizationRequest request, CancellationToken cancellationToken)
+    [HttpPost]
+    [Route("delete/{id}")]
+    public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            LogInformation($"Updating organization id: {id}");
-            var result = await _organizationService.Update(id, request, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error updating organization id: {id}", ex);
-            return StatusCode(500, "Internal server error");
-        }
+        var result = await _organizationService.Delete(id, cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return BadRequest(result);
     }
 
-    [HttpDelete("{id}")]
-    public async Task<ActionResult<Result<int>>> Delete(int id, CancellationToken cancellationToken)
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            LogInformation($"Deleting organization id: {id}");
-            var result = await _organizationService.Delete(id, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error deleting organization id: {id}", ex);
-            return StatusCode(500, "Internal server error");
-        }
+        var result = await _organizationService.GetById(id, cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return NotFound(result);
+    }
+
+    [HttpGet("get-all")]
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
+    {
+        var result = await _organizationService.GetAll(cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return BadRequest(result);
+    }
+
+    [HttpGet("get-pagination")]
+    public async Task<IActionResult> GetWithPagination([FromQuery] GetOrganizationsWithPaginationQuery query, CancellationToken cancellationToken = default)
+    {
+        var result = await _organizationService.GetWithPagination(query, cancellationToken);
+        if (result.Succeeded) return Ok(result);
+        return BadRequest(result);
     }
 }

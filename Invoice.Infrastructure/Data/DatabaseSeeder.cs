@@ -18,5 +18,8 @@ public static class DatabaseSeeder
         var userManager = provider.GetRequiredService<UserManager<User>>();
 
         await RoleAndUserSeeder.SeedRolesAndUsersAsync(context, roleManager, userManager);
+
+        // also run test data seeder
+        await TestDataSeeder.SeedSampleDataAsync(context, userManager);
     }
 }

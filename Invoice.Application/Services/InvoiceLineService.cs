@@ -1,4 +1,5 @@
 using AutoMapper;
+using Invoice.Application.Interfaces;
 using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Entities;
@@ -13,60 +14,29 @@ namespace Invoice.Application.Services;
 
 public class InvoiceLineService : BaseService, IInvoiceLineService
 {
+    private readonly IInvoiceLineRepository _invoiceLineRepository;
+    private readonly IInvoiceRepository _invoiceRepository;
+
     public InvoiceLineService(IHttpContextAccessor httpContextAccessor, ILogger<InvoiceLineService> logger,
-        IUnitOfWork unitOfWork, IMapper mapper)
+        IUnitOfWork unitOfWork, IMapper mapper, IInvoiceLineRepository invoiceLineRepository, IInvoiceRepository invoiceRepository)
         : base(httpContextAccessor, logger, unitOfWork, mapper)
     {
+        _invoiceLineRepository = invoiceLineRepository;
+        _invoiceRepository = invoiceRepository;
     }
 
-    public async Task<Result<List<InvoiceLineResponse>>> GetAll(CancellationToken cancellationToken)
+    public async Task<Result<int>> Create(CreateInvoiceLineRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            LogInformation("Getting all invoice lines");
-            var repo = _unitOfWork.Repository<Invoice.Domain.Entities.InvoiceLine>();
-            var items = await repo.Entities.AsNoTracking().ToListAsync(cancellationToken);
-            var dto = _mapper.Map<List<InvoiceLineResponse>>(items);
-            return Result<List<InvoiceLineResponse>>.Success(dto, "Invoice lines retrieved successfully");
-        }
-        catch (Exception ex)
-        {
-            LogError("Error getting invoice lines", ex);
-            return Result<List<InvoiceLineResponse>>.Failure("Failed to retrieve invoice lines");
-        }
-    }
+            LogInformation($"Creating invoice line for invoice: {request.InvoiceId}");
 
-    public async Task<Result<InvoiceLineResponse>> GetById(int id, CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation($"Getting invoice line id: {id}");
-            var repo = _unitOfWork.Repository<Invoice.Domain.Entities.InvoiceLine>();
-            var item = await repo.Entities.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
-            if (item == null) return Result<InvoiceLineResponse>.Failure("Invoice line not found");
-            var dto = _mapper.Map<InvoiceLineResponse>(item);
-            return Result<InvoiceLineResponse>.Success(dto, "Invoice line retrieved");
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error getting invoice line id: {id}", ex);
-            return Result<InvoiceLineResponse>.Failure("Failed to retrieve invoice line");
-        }
-    }
-
-    public async Task<Result<int>> Create(int invoiceId, InvoiceLineRequest request, CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation($"Creating invoice line for invoice id: {invoiceId}");
-            var invoiceRepo = _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>();
-            var invoice = await invoiceRepo.GetByIdAsync(invoiceId);
+            var invoice = await _invoiceRepository.GetByIdAsync(request.InvoiceId);
             if (invoice == null) return Result<int>.Failure("Invoice not found");
 
-            var repo = _unitOfWork.Repository<Invoice.Domain.Entities.InvoiceLine>();
-            var entity = new Invoice.Domain.Entities.InvoiceLine
+            var line = new InvoiceLine
             {
-                InvoiceId = invoiceId,
+                InvoiceId = request.InvoiceId,
                 LineNumber = request.LineNumber,
                 Description = request.Description,
                 Unit = request.Unit,
@@ -74,16 +44,16 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
                 UnitPrice = request.UnitPrice,
                 Discount = request.Discount,
                 TaxRate = request.TaxRate,
-                TaxAmount = Math.Round(request.Quantity * request.UnitPrice * (request.TaxRate / 100m), 2),
-                LineTotal = Math.Round(request.Quantity * request.UnitPrice - request.Discount + (request.Quantity * request.UnitPrice * (request.TaxRate / 100m)), 2),
-                CreatedBy = UserName,
+                TaxAmount = request.TaxAmount,
+                LineTotal = request.LineTotal,
+                CreatedBy = UserName ?? "System",
                 CreatedDate = DateTime.UtcNow
             };
 
-            await repo.AddAsync(entity);
+            await _invoiceLineRepository.AddAsync(line);
             await _unitOfWork.Save(cancellationToken);
 
-            return Result<int>.Success(entity.Id, "Invoice line created successfully");
+            return Result<int>.Success(line.Id, "Invoice line created successfully");
         }
         catch (Exception ex)
         {
@@ -92,36 +62,43 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
         }
     }
 
-    public async Task<Result<int>> Update(int id, InvoiceLineRequest request, CancellationToken cancellationToken)
+    public async Task<Result<int>> Update(int id, UpdateInvoiceLineRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            LogInformation($"Updating invoice line id: {id}");
-            var repo = _unitOfWork.Repository<Invoice.Domain.Entities.InvoiceLine>();
-            var entity = await repo.GetByIdAsync(id);
-            if (entity == null) return Result<int>.Failure("Invoice line not found");
+            LogInformation($"Updating invoice line ID: {id}");
 
-            entity.LineNumber = request.LineNumber;
-            entity.Description = request.Description;
-            entity.Unit = request.Unit;
-            entity.Quantity = request.Quantity;
-            entity.UnitPrice = request.UnitPrice;
-            entity.Discount = request.Discount;
-            entity.TaxRate = request.TaxRate;
-            entity.TaxAmount = Math.Round(request.Quantity * request.UnitPrice * (request.TaxRate / 100m), 2);
-            entity.LineTotal = Math.Round(request.Quantity * request.UnitPrice - request.Discount + (request.Quantity * request.UnitPrice * (request.TaxRate / 100m)), 2);
+            var line = await _invoiceLineRepository.GetByIdAsync(id);
+            if (line == null) return Result<int>.Failure("Invoice line not found");
 
-            entity.UpdatedBy = UserName;
-            entity.UpdatedDate = DateTime.UtcNow;
+            if (request.InvoiceId.HasValue)
+            {
+                var invoice = await _invoiceRepository.GetByIdAsync(request.InvoiceId.Value);
+                if (invoice == null) return Result<int>.Failure("Invoice not found");
+                line.InvoiceId = request.InvoiceId.Value;
+            }
 
-            await repo.UpdateAsync(entity);
+            if (request.LineNumber.HasValue) line.LineNumber = request.LineNumber.Value;
+            line.Description = request.Description ?? line.Description;
+            line.Unit = request.Unit ?? line.Unit;
+            if (request.Quantity.HasValue) line.Quantity = request.Quantity.Value;
+            if (request.UnitPrice.HasValue) line.UnitPrice = request.UnitPrice.Value;
+            if (request.Discount.HasValue) line.Discount = request.Discount.Value;
+            if (request.TaxRate.HasValue) line.TaxRate = request.TaxRate.Value;
+            if (request.TaxAmount.HasValue) line.TaxAmount = request.TaxAmount.Value;
+            if (request.LineTotal.HasValue) line.LineTotal = request.LineTotal.Value;
+
+            line.UpdatedBy = UserName;
+            line.UpdatedDate = DateTime.UtcNow;
+
+            await _invoiceLineRepository.UpdateAsync(line);
             await _unitOfWork.Save(cancellationToken);
 
-            return Result<int>.Success(entity.Id, "Invoice line updated successfully");
+            return Result<int>.Success(line.Id, "Invoice line updated successfully");
         }
         catch (Exception ex)
         {
-            LogError($"Error updating invoice line id: {id}", ex);
+            LogError($"Error updating invoice line ID: {id}", ex);
             return Result<int>.Failure("Failed to update invoice line");
         }
     }
@@ -130,20 +107,56 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
     {
         try
         {
-            LogInformation($"Deleting invoice line id: {id}");
-            var repo = _unitOfWork.Repository<Invoice.Domain.Entities.InvoiceLine>();
-            var entity = await repo.GetByIdAsync(id);
-            if (entity == null) return Result<int>.Failure("Invoice line not found");
+            LogInformation($"Deleting invoice line ID: {id}");
 
-            await repo.DeleteAsync(entity);
+            var line = await _invoiceLineRepository.GetByIdAsync(id);
+            if (line == null) return Result<int>.Failure("Invoice line not found");
+
+            line.IsDeleted = true;
+            line.UpdatedBy = UserName;
+            line.UpdatedDate = DateTime.UtcNow;
+
+            await _invoiceLineRepository.UpdateAsync(line);
             await _unitOfWork.Save(cancellationToken);
 
-            return Result<int>.Success(id, "Invoice line deleted successfully");
+            return Result<int>.Success(line.Id, "Invoice line deleted successfully");
         }
         catch (Exception ex)
         {
-            LogError($"Error deleting invoice line id: {id}", ex);
+            LogError($"Error deleting invoice line ID: {id}", ex);
             return Result<int>.Failure("Failed to delete invoice line");
+        }
+    }
+
+    public async Task<Result<InvoiceLineResponse>> GetById(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var line = await _invoiceLineRepository.GetByIdAsync(id);
+            if (line == null) return Result<InvoiceLineResponse>.Failure("Invoice line not found");
+
+            var dto = _mapper.Map<InvoiceLineResponse>(line);
+            return Result<InvoiceLineResponse>.Success(dto, "Invoice line retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error getting invoice line ID: {id}", ex);
+            return Result<InvoiceLineResponse>.Failure("Failed to get invoice line");
+        }
+    }
+
+    public async Task<Result<List<InvoiceLineResponse>>> GetByInvoiceId(int invoiceId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var list = await _invoiceLineRepository.GetByInvoiceIdAsync(invoiceId);
+            var dto = _mapper.Map<List<InvoiceLineResponse>>(list);
+            return Result<List<InvoiceLineResponse>>.Success(dto, "Invoice lines retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting invoice lines", ex);
+            return Result<List<InvoiceLineResponse>>.Failure("Failed to get invoice lines");
         }
     }
 }

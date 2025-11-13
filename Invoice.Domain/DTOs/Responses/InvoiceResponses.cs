@@ -1,61 +1,64 @@
 using Invoice.Domain.Common.Mappings;
-using Invoice.Domain.Entities;
+using Invoice.Domain.Enums;
+using System;
+using System.Collections.Generic;
 
 namespace Invoice.Domain.DTOs.Responses;
 
-public class InvoiceLineResponse : IMapFrom<Invoice.Domain.Entities.InvoiceLine>
+public record InvoiceLineResponse : IMapFrom<Invoice.Domain.Entities.InvoiceLine>
 {
-    public int Id { get; set; }
-    public int InvoiceId { get; set; }
-    public int LineNumber { get; set; }
-    public string? Description { get; set; }
-    public string? Unit { get; set; }
-    public decimal Quantity { get; set; }
-    public decimal UnitPrice { get; set; }
-    public decimal Discount { get; set; }
-    public decimal TaxRate { get; set; }
-    public decimal TaxAmount { get; set; }
-    public decimal LineTotal { get; set; }
+    public int Id { get; init; }
+    public int InvoiceId { get; init; }
+    public int LineNumber { get; init; }
+    public string? Description { get; init; }
+    public decimal Quantity { get; init; }
+    public string? Unit { get; init; }
+    public decimal UnitPrice { get; init; }
+    public decimal Discount { get; init; }
+    public decimal TaxRate { get; init; }
+    public decimal TaxAmount { get; init; }
+    public decimal LineTotal { get; init; }
 }
 
-public class InvoiceResponse : IMapFrom<Invoice.Domain.Entities.Invoice>
+public record InvoiceResponse : IMapFrom<Invoice.Domain.Entities.Invoice>
 {
-    public int Id { get; set; }
-    public string InvoiceNumber { get; set; } = string.Empty;
-    public string? FormNumber { get; set; }
-    public string? Serial { get; set; }
-    public int TenantOrganizationId { get; set; }
-    public int IssuedByUserId { get; set; }
+    public int Id { get; init; }
+    public string? InvoiceNumber { get; init; }
+    public string? FormNumber { get; init; }
+    public string? Serial { get; init; }
 
-    public string? SellerName { get; set; }
-    public string? SellerTaxId { get; set; }
-    public string? SellerAddress { get; set; }
-    public string? SellerPhone { get; set; }
-    public string? SellerEmail { get; set; }
+    public int OrganizationId { get; init; }
+    public int? IssuedByUserId { get; init; }
 
-    public string? CustomerName { get; set; }
-    public string? CustomerTaxId { get; set; }
-    public string? CustomerAddress { get; set; }
-    public string? CustomerPhone { get; set; }
-    public string? CustomerEmail { get; set; }
+    // Seller
+    public string? SellerName { get; init; }
+    public string? SellerTaxId { get; init; }
+    public string? SellerAddress { get; init; }
+    public string? SellerPhone { get; init; }
+    public string? SellerEmail { get; init; }
 
-    public string? Status { get; set; }
-    public DateTime? IssuedDate { get; set; }
+    // Customer
+    public string? CustomerName { get; init; }
+    public string? CustomerTaxId { get; init; }
+    public string? CustomerAddress { get; init; }
+    public string? CustomerPhone { get; init; }
+    public string? CustomerEmail { get; init; }
 
-    public decimal Subtotal { get; set; }
-    public decimal TaxAmount { get; set; }
-    public decimal DiscountAmount { get; set; }
-    public decimal TotalAmount { get; set; }
+    public InvoiceStatus Status { get; init; }
+    public DateTime? IssuedDate { get; init; }
 
-    public string? Currency { get; set; }
-    public string? Note { get; set; }
+    public decimal? SubTotal { get; init; }
+    public decimal? TaxAmount { get; init; }
+    public decimal? DiscountAmount { get; init; }
+    public decimal? TotalAmount { get; init; }
+    public string? Currency { get; init; }
+    public string? Note { get; init; }
 
-    public int? BatchId { get; set; }
+    public int? BatchId { get; init; }
+    public string? ImmutableHash { get; init; }
+    public string? Cid { get; init; }
+    public string? CidHash { get; init; }
+    public string? MerkleProof { get; init; }
 
-    public List<InvoiceLineResponse> Lines { get; set; } = new();
-
-    public string? CreatedBy { get; set; }
-    public DateTime? CreatedDate { get; set; }
-    public string? UpdatedBy { get; set; }
-    public DateTime? UpdatedDate { get; set; }
+    public List<InvoiceLineResponse> Lines { get; init; } = new List<InvoiceLineResponse>();
 }

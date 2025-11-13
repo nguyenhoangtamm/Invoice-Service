@@ -1,3 +1,4 @@
+// Request DTOs for Organization CRUD
 namespace Invoice.Domain.DTOs.Requests;
 
 public record CreateOrganizationRequest
@@ -8,11 +9,11 @@ public record CreateOrganizationRequest
     public string? OrganizationPhone { get; init; }
     public string? OrganizationEmail { get; init; }
     public string? OrganizationBankAccount { get; init; }
-    public int? UserId { get; init; }
 }
 
 public record UpdateOrganizationRequest
 {
+    public int Id { get; init; }
     public string? OrganizationName { get; init; }
     public string? OrganizationTaxId { get; init; }
     public string? OrganizationAddress { get; init; }
@@ -21,9 +22,7 @@ public record UpdateOrganizationRequest
     public string? OrganizationBankAccount { get; init; }
 }
 
-public record GetOrganizationsQuery
+public record DeleteOrganizationRequest
 {
-    public int PageNumber { get; init; } = 1;
-    public int PageSize { get; init; } = 10;
-    public string? Keyword { get; init; }
+    public int Id { get; init; }
 }

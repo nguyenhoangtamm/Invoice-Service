@@ -1,4 +1,5 @@
 using AutoMapper;
+using Invoice.Application.Interfaces;
 using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Entities;
@@ -13,83 +14,21 @@ namespace Invoice.Application.Services;
 
 public class OrganizationService : BaseService, IOrganizationService
 {
+    private readonly IOrganizationRepository _organizationRepository;
+
     public OrganizationService(IHttpContextAccessor httpContextAccessor, ILogger<OrganizationService> logger,
-        IUnitOfWork unitOfWork, IMapper mapper)
+        IUnitOfWork unitOfWork, IMapper mapper, IOrganizationRepository organizationRepository)
         : base(httpContextAccessor, logger, unitOfWork, mapper)
     {
-    }
-
-    public async Task<Result<List<OrganizationResponse>>> GetAll(CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation("Getting all organizations");
-            var repo = _unitOfWork.Repository<Organization>();
-            var list = await repo.Entities.AsNoTracking().ToListAsync(cancellationToken);
-            var dto = _mapper.Map<List<OrganizationResponse>>(list);
-            return Result<List<OrganizationResponse>>.Success(dto, "Organizations retrieved successfully");
-        }
-        catch (Exception ex)
-        {
-            LogError("Error while getting organizations", ex);
-            return Result<List<OrganizationResponse>>.Failure("Failed to retrieve organizations");
-        }
-    }
-
-    public async Task<Result<PaginatedResult<OrganizationResponse>>> GetWithPagination(GetOrganizationsQuery query, CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation("Getting organizations with pagination");
-            var repo = _unitOfWork.Repository<Organization>();
-            var q = repo.Entities.AsNoTracking();
-
-            if (!string.IsNullOrWhiteSpace(query.Keyword))
-            {
-                var k = query.Keyword.Trim().ToLower();
-                q = q.Where(o => o.OrganizationName.ToLower().Contains(k) || (o.OrganizationEmail != null && o.OrganizationEmail.ToLower().Contains(k)));
-            }
-
-            var count = await q.CountAsync(cancellationToken);
-            var items = await q.OrderBy(o => o.OrganizationName)
-                               .Skip((query.PageNumber - 1) * query.PageSize)
-                               .Take(query.PageSize)
-                               .ToListAsync(cancellationToken);
-
-            var dto = _mapper.Map<List<OrganizationResponse>>(items);
-            return Result<PaginatedResult<OrganizationResponse>>.Success(new PaginatedResult<OrganizationResponse>(true, dto, null, count, query.PageNumber, query.PageSize));
-        }
-        catch (Exception ex)
-        {
-            LogError("Error while getting organizations with pagination", ex);
-            return Result<PaginatedResult<OrganizationResponse>>.Failure("Failed to retrieve organizations");
-        }
-    }
-
-    public async Task<Result<OrganizationResponse>> GetById(int id, CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation($"Getting organization by id: {id}");
-            var repo = _unitOfWork.Repository<Organization>();
-            var org = await repo.Entities.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
-            if (org == null) return Result<OrganizationResponse>.Failure("Organization not found");
-            var dto = _mapper.Map<OrganizationResponse>(org);
-            return Result<OrganizationResponse>.Success(dto, "Organization retrieved");
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error getting organization by id: {id}", ex);
-            return Result<OrganizationResponse>.Failure("Failed to retrieve organization");
-        }
+        _organizationRepository = organizationRepository;
     }
 
     public async Task<Result<int>> Create(CreateOrganizationRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            LogInformation("Creating organization");
-            var repo = _unitOfWork.Repository<Organization>();
+            LogInformation($"Creating organization: {request.OrganizationName}");
+
             var org = new Organization
             {
                 OrganizationName = request.OrganizationName,
@@ -98,12 +37,11 @@ public class OrganizationService : BaseService, IOrganizationService
                 OrganizationPhone = request.OrganizationPhone,
                 OrganizationEmail = request.OrganizationEmail,
                 OrganizationBankAccount = request.OrganizationBankAccount,
-                UserId = request.UserId,
-                CreatedBy = UserName,
+                CreatedBy = UserName ?? "System",
                 CreatedDate = DateTime.UtcNow
             };
 
-            await repo.AddAsync(org);
+            await _organizationRepository.AddAsync(org);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(org.Id, "Organization created successfully");
@@ -119,12 +57,14 @@ public class OrganizationService : BaseService, IOrganizationService
     {
         try
         {
-            LogInformation($"Updating organization id: {id}");
-            var repo = _unitOfWork.Repository<Organization>();
-            var org = await repo.GetByIdAsync(id);
-            if (org == null) return Result<int>.Failure("Organization not found");
+            LogInformation($"Updating organization ID: {id}");
 
-            if (!string.IsNullOrWhiteSpace(request.OrganizationName)) org.OrganizationName = request.OrganizationName;
+            var org = await _organizationRepository.GetByIdAsync(id);
+            if (org == null)
+                return Result<int>.Failure("Organization not found");
+
+            // Update fields if provided
+            if (!string.IsNullOrEmpty(request.OrganizationName)) org.OrganizationName = request.OrganizationName;
             if (request.OrganizationTaxId != null) org.OrganizationTaxId = request.OrganizationTaxId;
             if (request.OrganizationAddress != null) org.OrganizationAddress = request.OrganizationAddress;
             if (request.OrganizationPhone != null) org.OrganizationPhone = request.OrganizationPhone;
@@ -134,14 +74,14 @@ public class OrganizationService : BaseService, IOrganizationService
             org.UpdatedBy = UserName;
             org.UpdatedDate = DateTime.UtcNow;
 
-            await repo.UpdateAsync(org);
+            await _organizationRepository.UpdateAsync(org);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(org.Id, "Organization updated successfully");
         }
         catch (Exception ex)
         {
-            LogError($"Error updating organization id: {id}", ex);
+            LogError($"Error updating organization ID: {id}", ex);
             return Result<int>.Failure("Failed to update organization");
         }
     }
@@ -150,20 +90,87 @@ public class OrganizationService : BaseService, IOrganizationService
     {
         try
         {
-            LogInformation($"Deleting organization id: {id}");
-            var repo = _unitOfWork.Repository<Organization>();
-            var org = await repo.GetByIdAsync(id);
-            if (org == null) return Result<int>.Failure("Organization not found");
+            LogInformation($"Deleting organization ID: {id}");
 
-            await repo.DeleteAsync(org);
+            var org = await _organizationRepository.GetByIdAsync(id);
+            if (org == null)
+                return Result<int>.Failure("Organization not found");
+
+            // Soft delete
+            org.IsDeleted = true;
+            org.UpdatedBy = UserName;
+            org.UpdatedDate = DateTime.UtcNow;
+
+            await _organizationRepository.UpdateAsync(org);
             await _unitOfWork.Save(cancellationToken);
 
-            return Result<int>.Success(id, "Organization deleted successfully");
+            return Result<int>.Success(org.Id, "Organization deleted successfully");
         }
         catch (Exception ex)
         {
-            LogError($"Error deleting organization id: {id}", ex);
+            LogError($"Error deleting organization ID: {id}", ex);
             return Result<int>.Failure("Failed to delete organization");
+        }
+    }
+
+    public async Task<Result<OrganizationResponse>> GetById(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Getting organization ID: {id}");
+
+            var org = await _organizationRepository.GetByIdAsync(id);
+            if (org == null)
+                return Result<OrganizationResponse>.Failure("Organization not found");
+
+            var dto = _mapper.Map<OrganizationResponse>(org);
+            return Result<OrganizationResponse>.Success(dto, "Organization retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error getting organization ID: {id}", ex);
+            return Result<OrganizationResponse>.Failure("Failed to get organization");
+        }
+    }
+
+    public async Task<Result<List<OrganizationResponse>>> GetAll(CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation("Getting all organizations");
+            var list = await _organizationRepository.GetAllAsync();
+            var dto = _mapper.Map<List<OrganizationResponse>>(list);
+            return Result<List<OrganizationResponse>>.Success(dto, "Organizations retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting organizations", ex);
+            return Result<List<OrganizationResponse>>.Failure("Failed to get organizations");
+        }
+    }
+
+    public async Task<Result<PaginatedResult<OrganizationResponse>>> GetWithPagination(GetOrganizationsWithPaginationQuery query, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Getting organizations pagination: {query.PageNumber}/{query.PageSize}");
+            var q = _organizationRepository.GetAllAsync().Result.AsQueryable();
+            if (!string.IsNullOrEmpty(query.Keyword))
+            {
+                var kw = query.Keyword.ToLower();
+                q = q.Where(o => o.OrganizationName.ToLower().Contains(kw) || (o.OrganizationTaxId ?? string.Empty).ToLower().Contains(kw));
+            }
+
+            var total = q.Count();
+            var items = q.Skip((query.PageNumber - 1) * query.PageSize).Take(query.PageSize).ToList();
+            var dto = _mapper.Map<List<OrganizationResponse>>(items);
+            var paged = PaginatedResult<OrganizationResponse>.Create(dto, total, query.PageNumber, query.PageSize);
+            return Result<PaginatedResult<OrganizationResponse>>.Success(paged, "Organizations retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting organizations with pagination", ex);
+            return Result<PaginatedResult<OrganizationResponse>>.Failure("Failed to get organizations");
         }
     }
 }
