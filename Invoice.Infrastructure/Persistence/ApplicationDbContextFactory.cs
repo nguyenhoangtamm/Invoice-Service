@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Http;
 using System.IO;
 
 namespace Invoice.Infrastructure.Persistence;
@@ -38,7 +37,6 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
         optionsBuilder.UseNpgsql(connStr, npgsqlOptions => npgsqlOptions.MigrationsAssembly("Invoice.Infrastructure"));
 
-        // IHttpContextAccessor is optional for design-time
-        return new ApplicationDbContext(optionsBuilder.Options, new HttpContextAccessor());
+        return new ApplicationDbContext(optionsBuilder.Options);
     }
 }

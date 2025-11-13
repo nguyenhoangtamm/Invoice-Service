@@ -8,109 +8,148 @@ using Microsoft.AspNetCore.Mvc;
 namespace Invoice.API.Controllers;
 
 [Authorize]
-public class InvoiceBatchesController : ApiControllerBase
+public class InvoiceBatchesController(ILogger<InvoiceBatchesController> logger, IInvoiceBatchService batchService) : ApiControllerBase(logger)
 {
-    private readonly IInvoiceBatchService _batchService;
+    private readonly IInvoiceBatchService _batchService = batchService;
 
-    public InvoiceBatchesController(ILogger<InvoiceBatchesController> logger, IInvoiceBatchService batchService)
-        : base(logger)
-    {
-        _batchService = batchService;
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<Result<List<InvoiceBatchResponse>>>> GetAll(CancellationToken cancellationToken)
+    [HttpPost("create")]
+    public async Task<IActionResult> Create([FromBody] CreateInvoiceBatchRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var result = await _batchService.GetAll(cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError("Error getting invoice batches", ex);
-            return StatusCode(500, "Internal server error");
-        }
-    }
+            LogInformation($"Creating invoice batch");
 
-    [HttpGet("paged")]
-    public async Task<ActionResult<Result<PaginatedResult<InvoiceBatchResponse>>>> GetPaged([FromQuery] GetInvoiceBatchesQuery query, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var result = await _batchService.GetWithPagination(query, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return BadRequest(result);
-        }
-        catch (Exception ex)
-        {
-            LogError("Error getting invoice batches paged", ex);
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Result<InvoiceBatchResponse>>> GetById(int id, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var result = await _batchService.GetById(id, cancellationToken);
-            if (result.Succeeded) return Ok(result);
-            return NotFound(result);
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error getting invoice batch id {id}", ex);
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<Result<int>>> Create([FromBody] CreateInvoiceBatchRequest request, CancellationToken cancellationToken)
-    {
-        try
-        {
             var result = await _batchService.Create(request, cancellationToken);
-            if (result.Succeeded) return Ok(result);
+
+            if (result.Succeeded)
+            {
+                return Ok(result);
+            }
+
             return BadRequest(result);
         }
         catch (Exception ex)
         {
             LogError("Error creating invoice batch", ex);
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, "An error occurred while creating the invoice batch");
         }
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<Result<int>>> Update(int id, [FromBody] UpdateInvoiceBatchRequest request, CancellationToken cancellationToken)
+    [HttpPost]
+    [Route("update/{id}")]
+    public async Task<ActionResult<Result<int>>> Update([FromRoute] int id, [FromBody] UpdateInvoiceBatchRequest request, CancellationToken cancellationToken)
     {
         try
         {
+            LogInformation($"Updating invoice batch with ID: {id}");
+
             var result = await _batchService.Update(id, request, cancellationToken);
-            if (result.Succeeded) return Ok(result);
+
+            if (result.Succeeded)
+            {
+                return Ok(result);
+            }
+
             return BadRequest(result);
         }
         catch (Exception ex)
         {
-            LogError($"Error updating invoice batch id {id}", ex);
-            return StatusCode(500, "Internal server error");
+            LogError($"Error updating invoice batch with ID: {id}", ex);
+            return StatusCode(500, "An error occurred while updating the invoice batch");
         }
     }
 
-    [HttpDelete("{id}")]
-    public async Task<ActionResult<Result<int>>> Delete(int id, CancellationToken cancellationToken)
+    [HttpPost]
+    [Route("delete/{id}")]
+    public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
     {
         try
         {
+            LogInformation($"Deleting invoice batch with ID: {id}");
+
             var result = await _batchService.Delete(id, cancellationToken);
-            if (result.Succeeded) return Ok(result);
+
+            if (result.Succeeded)
+            {
+                return Ok(result);
+            }
+
             return BadRequest(result);
         }
         catch (Exception ex)
         {
-            LogError($"Error deleting invoice batch id {id}", ex);
-            return StatusCode(500, "Internal server error");
+            LogError($"Error deleting invoice batch with ID: {id}", ex);
+            return StatusCode(500, "An error occurred while deleting the invoice batch");
+        }
+    }
+
+    [HttpGet("get-by-id/{id}")]
+    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Getting invoice batch with ID: {id}");
+
+            var result = await _batchService.GetById(id, cancellationToken);
+
+            if (result.Succeeded)
+            {
+                return Ok(result);
+            }
+
+            return NotFound(result);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error getting invoice batch with ID: {id}", ex);
+            return StatusCode(500, "An error occurred while retrieving the invoice batch");
+        }
+    }
+
+    [HttpGet]
+    [Route("get-all")]
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            LogInformation("Getting all invoice batches");
+
+            var result = await _batchService.GetAll(cancellationToken);
+
+            if (result.Succeeded)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting all invoice batches", ex);
+            return StatusCode(500, "An error occurred while retrieving invoice batches");
+        }
+    }
+
+    [HttpGet("get-pagination")]
+    public async Task<IActionResult> GetInvoiceBatchesWithPagination([FromQuery] GetInvoiceBatchWithPagination request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            LogInformation($"Getting invoice batches with pagination - Page: {request.PageNumber}, Size: {request.PageSize}");
+
+            var result = await _batchService.GetWithPagination(request, cancellationToken);
+
+            if (result.Succeeded)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting invoice batches with pagination", ex);
+            return StatusCode(500, "An error occurred while retrieving invoice batches");
         }
     }
 }

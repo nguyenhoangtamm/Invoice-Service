@@ -1,6 +1,6 @@
 using AutoMapper;
-using FluentValidation;
-using Invoice.Application.Services;
+using AutoMapper.QueryableExtensions;
+using Invoice.Application.Extensions;
 using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Entities;
@@ -28,12 +28,148 @@ public class MenuService : BaseService, IMenuService
         _userManager = userManager;
     }
 
+    public async Task<Result<int>> Create(CreateMenuRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Creating menu: {request.Name}");
+
+            // Check for duplicate menu name
+            var existingMenu = await _unitOfWork.Repository<Menu>().Entities
+                .FirstOrDefaultAsync(m => m.Name == request.Name && !m.IsDeleted, cancellationToken);
+
+            if (existingMenu != null)
+            {
+                return Result<int>.Failure("Menu with this name already exists");
+            }
+
+            var menu = _mapper.Map<Menu>(request);
+            menu.CreatedBy = UserName ?? "System";
+            menu.CreatedDate = DateTime.UtcNow;
+
+            await _unitOfWork.Repository<Menu>().AddAsync(menu);
+            await _unitOfWork.Save(cancellationToken);
+
+            return Result<int>.Success(menu.Id, "Menu created successfully");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error creating menu", ex);
+            return Result<int>.Failure("Failed to create menu");
+        }
+    }
+
+    public async Task<Result<int>> Update(int id, UpdateMenuRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Updating menu ID: {id}");
+
+            var menu = await _unitOfWork.Repository<Menu>().GetByIdAsync(id);
+            if (menu == null) return Result<int>.Failure("Menu not found");
+
+            // Check for duplicate menu name (excluding current menu)
+            if (!string.IsNullOrWhiteSpace(request.Name))
+            {
+                var existingMenu = await _unitOfWork.Repository<Menu>().Entities
+                    .FirstOrDefaultAsync(m => m.Name == request.Name && m.Id != id && !m.IsDeleted, cancellationToken);
+
+                if (existingMenu != null)
+                {
+                    return Result<int>.Failure("Menu with this name already exists");
+                }
+            }
+
+            // Check for duplicate menu path (excluding current menu)
+            if (!string.IsNullOrWhiteSpace(request.Path))
+            {
+                var existingPathMenu = await _unitOfWork.Repository<Menu>().Entities
+                    .FirstOrDefaultAsync(m => m.Path == request.Path && m.Id != id && !m.IsDeleted, cancellationToken);
+
+                if (existingPathMenu != null)
+                {
+                    return Result<int>.Failure("Menu with this path already exists");
+                }
+            }
+
+            _mapper.Map(request, menu);
+            menu.UpdatedBy = UserName ?? "System";
+            menu.UpdatedDate = DateTime.UtcNow;
+
+            await _unitOfWork.Repository<Menu>().UpdateAsync(menu);
+            await _unitOfWork.Save(cancellationToken);
+
+            return Result<int>.Success(menu.Id, "Menu updated successfully");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error updating menu", ex);
+            return Result<int>.Failure("Failed to update menu");
+        }
+    }
+
+    public async Task<Result<int>> Delete(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Deleting menu ID: {id}");
+
+            var menu = await _unitOfWork.Repository<Menu>().GetByIdAsync(id);
+            if (menu == null) return Result<int>.Failure("Menu not found");
+
+            // Check if menu has children
+            var hasChildren = await _unitOfWork.Repository<Menu>()
+                .Entities
+                .AnyAsync(m => m.ParentId == id && !m.IsDeleted, cancellationToken);
+
+            if (hasChildren)
+            {
+                return Result<int>.Failure("Cannot delete menu that has child menus");
+            }
+
+            // Soft delete
+            menu.IsDeleted = true;
+            menu.UpdatedBy = UserName ?? "System";
+            menu.UpdatedDate = DateTime.UtcNow;
+
+            await _unitOfWork.Repository<Menu>().UpdateAsync(menu);
+            await _unitOfWork.Save(cancellationToken);
+
+            return Result<int>.Success(id, "Menu deleted successfully");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error deleting menu", ex);
+            return Result<int>.Failure("Failed to delete menu");
+        }
+    }
+
+    public async Task<Result<MenuResponse>> GetById(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var menu = await _unitOfWork.Repository<Menu>()
+                .Entities
+                .Include(m => m.Children)
+                .Include(m => m.Parent)
+                .FirstOrDefaultAsync(m => m.Id == id && !m.IsDeleted, cancellationToken);
+
+            if (menu == null) return Result<MenuResponse>.Failure("Menu not found");
+
+            var response = _mapper.Map<MenuResponse>(menu);
+            return Result<MenuResponse>.Success(response, "Menu retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting menu", ex);
+            return Result<MenuResponse>.Failure("Failed to get menu");
+        }
+    }
+
     public async Task<Result<List<MenuResponse>>> GetAll(CancellationToken cancellationToken)
     {
         try
         {
-            LogInformation("Getting all menus");
-
             var menus = await _unitOfWork.Repository<Menu>()
                 .Entities
                 .Include(m => m.Children)
@@ -42,39 +178,45 @@ public class MenuService : BaseService, IMenuService
                 .ToListAsync(cancellationToken);
 
             var response = _mapper.Map<List<MenuResponse>>(menus);
-            return Result<List<MenuResponse>>.Success(response, "Menus retrieved successfully");
+            return Result<List<MenuResponse>>.Success(response, "Menus retrieved");
         }
         catch (Exception ex)
         {
-            LogError("Error occurred while getting all menus", ex);
-            return Result<List<MenuResponse>>.Failure("Failed to retrieve menus");
+            LogError("Error getting menus", ex);
+            return Result<List<MenuResponse>>.Failure("Failed to get menus");
         }
     }
 
-    public async Task<Result<MenuResponse>> GetById(int id, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedResult<MenuResponse>>> GetWithPagination(GetMenuWithPagination query, CancellationToken cancellationToken)
     {
         try
         {
-            LogInformation($"Getting menu by ID: {id}");
+            LogInformation($"Getting menus with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
 
-            var menu = await _unitOfWork.Repository<Menu>()
+            var menusQuery = _unitOfWork.Repository<Menu>()
                 .Entities
                 .Include(m => m.Children)
                 .Include(m => m.Parent)
-                .FirstOrDefaultAsync(m => m.Id == id && !m.IsDeleted, cancellationToken);
+                .Where(m => !m.IsDeleted)
+                .AsQueryable();
 
-            if (menu == null)
+            // Apply keyword filter if provided
+            if (!string.IsNullOrEmpty(query.Keyword))
             {
-                return Result<MenuResponse>.Failure("Menu not found");
+                menusQuery = menusQuery.Where(m => m.Name.Contains(query.Keyword) || 
+                                        m.Path.Contains(query.Keyword));
             }
 
-            var response = _mapper.Map<MenuResponse>(menu);
-            return Result<MenuResponse>.Success(response, "Menu retrieved successfully");
+            return await menusQuery.OrderBy(x => x.Order)
+                .ProjectTo<MenuResponse>(_mapper.ConfigurationProvider)
+                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken)
+                .ContinueWith(t => Result<PaginatedResult<MenuResponse>>.Success(t.Result, "Menus retrieved"), cancellationToken);
+
         }
         catch (Exception ex)
         {
-            LogError($"Error occurred while getting menu by ID: {id}", ex);
-            return Result<MenuResponse>.Failure("Failed to retrieve menu");
+            LogError("Error getting menus with pagination", ex);
+            return Result<PaginatedResult<MenuResponse>>.Failure("Failed to get menus with pagination");
         }
     }
 
@@ -93,12 +235,12 @@ public class MenuService : BaseService, IMenuService
             var menuTree = BuildMenuTree(menus, null);
             var response = _mapper.Map<List<MenuTreeResponse>>(menuTree);
 
-            return Result<List<MenuTreeResponse>>.Success(response, "Menu tree retrieved successfully");
+            return Result<List<MenuTreeResponse>>.Success(response, "Menu tree retrieved");
         }
         catch (Exception ex)
         {
-            LogError("Error occurred while getting menu tree", ex);
-            return Result<List<MenuTreeResponse>>.Failure("Failed to retrieve menu tree");
+            LogError("Error getting menu tree", ex);
+            return Result<List<MenuTreeResponse>>.Failure("Failed to get menu tree");
         }
     }
 
@@ -126,12 +268,12 @@ public class MenuService : BaseService, IMenuService
 
             var menuTree = BuildMenuTreeWithPermissions(allMenus, roleMenus, null);
 
-            return Result<List<MenuTreeResponse>>.Success(menuTree, "Role menu tree retrieved successfully");
+            return Result<List<MenuTreeResponse>>.Success(menuTree, "Role menu tree retrieved");
         }
         catch (Exception ex)
         {
-            LogError($"Error occurred while getting menu tree by role ID: {roleId}", ex);
-            return Result<List<MenuTreeResponse>>.Failure("Failed to retrieve role menu tree");
+            LogError("Error getting menu tree by role", ex);
+            return Result<List<MenuTreeResponse>>.Failure("Failed to get menu tree by role");
         }
     }
 
@@ -166,141 +308,12 @@ public class MenuService : BaseService, IMenuService
 
             var menuTree = BuildUserMenuTree(roleMenus, null);
 
-            return Result<List<UserMenuResponse>>.Success(menuTree, "User menus retrieved successfully");
+            return Result<List<UserMenuResponse>>.Success(menuTree, "User menus retrieved");
         }
         catch (Exception ex)
         {
-            LogError("Error occurred while getting menus by user roles", ex);
-            return Result<List<UserMenuResponse>>.Failure("Failed to retrieve user menus");
-        }
-    }
-
-    public async Task<Result<int>> Create(CreateMenuRequest request, CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation($"Creating menu with name: {request.Name}");
-
-            // Simple validation
-            if (string.IsNullOrWhiteSpace(request.Name))
-            {
-                return Result<int>.Failure("Menu name is required");
-            }
-
-            // Check for duplicate menu name
-            var existingMenu = await _unitOfWork.Repository<Menu>().Entities
-                .FirstOrDefaultAsync(m => m.Name == request.Name && !m.IsDeleted, cancellationToken);
-
-            if (existingMenu != null)
-            {
-                return Result<int>.Failure("Menu with this name already exists");
-            }
-
-            var menu = _mapper.Map<Menu>(request);
-            menu.CreatedBy = UserName;
-            menu.CreatedDate = DateTime.UtcNow;
-
-            await _unitOfWork.Repository<Menu>().AddAsync(menu);
-            await _unitOfWork.Save(cancellationToken);
-
-            return Result<int>.Success(menu.Id, "Menu created successfully");
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error occurred while creating menu: {request.Name}", ex);
-            return Result<int>.Failure("Failed to create menu");
-        }
-    }
-
-    public async Task<Result<int>> Update(int id, UpdateMenuRequest request, CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation($"Updating menu with ID: {id}");
-
-            var menu = await _unitOfWork.Repository<Menu>().GetByIdAsync(id);
-            if (menu == null)
-            {
-                return Result<int>.Failure("Menu not found");
-            }
-
-            // Simple validation
-            if (!string.IsNullOrWhiteSpace(request.Name))
-            {
-                // Check for duplicate menu name (excluding current menu)
-                var existingMenu = await _unitOfWork.Repository<Menu>().Entities
-                    .FirstOrDefaultAsync(m => m.Name == request.Name && m.Id != id && !m.IsDeleted, cancellationToken);
-
-                if (existingMenu != null)
-                {
-                    return Result<int>.Failure("Menu with this name already exists");
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(request.Path))
-            {
-                // Check for duplicate menu path (excluding current menu)
-                var existingPathMenu = await _unitOfWork.Repository<Menu>().Entities
-                    .FirstOrDefaultAsync(m => m.Path == request.Path && m.Id != id && !m.IsDeleted, cancellationToken);
-
-                if (existingPathMenu != null)
-                {
-                    return Result<int>.Failure("Menu with this path already exists");
-                }
-            }
-
-            _mapper.Map(request, menu);
-            menu.UpdatedBy = UserName;
-            menu.UpdatedDate = DateTime.UtcNow;
-
-            await _unitOfWork.Repository<Menu>().UpdateAsync(menu);
-            await _unitOfWork.Save(cancellationToken);
-
-            return Result<int>.Success(menu.Id, "Menu updated successfully");
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error occurred while updating menu with ID: {id}", ex);
-            return Result<int>.Failure("Failed to update menu");
-        }
-    }
-
-    public async Task<Result<int>> Delete(int id, CancellationToken cancellationToken)
-    {
-        try
-        {
-            LogInformation($"Deleting menu with ID: {id}");
-
-            var menu = await _unitOfWork.Repository<Menu>().GetByIdAsync(id);
-            if (menu == null)
-            {
-                return Result<int>.Failure("Menu not found");
-            }
-
-            // Check if menu has children
-            var hasChildren = await _unitOfWork.Repository<Menu>()
-                .Entities
-                .AnyAsync(m => m.ParentId == id && !m.IsDeleted, cancellationToken);
-
-            if (hasChildren)
-            {
-                return Result<int>.Failure("Cannot delete menu that has child menus");
-            }
-
-            // Soft delete
-            menu.IsDeleted = true;
-            menu.UpdatedBy = UserName;
-            menu.UpdatedDate = DateTime.UtcNow;
-
-            await _unitOfWork.Repository<Menu>().UpdateAsync(menu);
-            await _unitOfWork.Save(cancellationToken);
-
-            return Result<int>.Success(id, "Menu deleted successfully");
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error occurred while deleting menu with ID: {id}", ex);
-            return Result<int>.Failure("Failed to delete menu");
+            LogError("Error getting menus by user roles", ex);
+            return Result<List<UserMenuResponse>>.Failure("Failed to get menus by user roles");
         }
     }
 
@@ -309,17 +322,6 @@ public class MenuService : BaseService, IMenuService
         try
         {
             LogInformation($"Assigning menus to role ID: {request.RoleId}");
-
-            // Simple validation
-            if (request.RoleId <= 0)
-            {
-                return Result<int>.Failure("Invalid role ID");
-            }
-
-            if (request.MenuIds == null || !request.MenuIds.Any())
-            {
-                return Result<int>.Failure("Menu IDs are required");
-            }
 
             // Remove existing role menus
             var existingRoleMenus = await _unitOfWork.Repository<RoleMenu>()
@@ -330,23 +332,26 @@ public class MenuService : BaseService, IMenuService
             foreach (var roleMenu in existingRoleMenus)
             {
                 roleMenu.IsDeleted = true;
-                roleMenu.UpdatedBy = UserName;
+                roleMenu.UpdatedBy = UserName ?? "System";
                 roleMenu.UpdatedDate = DateTime.UtcNow;
                 await _unitOfWork.Repository<RoleMenu>().UpdateAsync(roleMenu);
             }
 
             // Add new role menus
-            foreach (var menuId in request.MenuIds)
+            if (request.MenuIds != null && request.MenuIds.Any())
             {
-                var roleMenu = new RoleMenu
+                foreach (var menuId in request.MenuIds)
                 {
-                    RoleId = request.RoleId,
-                    MenuId = menuId,
-                    CreatedBy = UserName,
-                    CreatedDate = DateTime.UtcNow
-                };
+                    var roleMenu = new RoleMenu
+                    {
+                        RoleId = request.RoleId,
+                        MenuId = menuId,
+                        CreatedBy = UserName ?? "System",
+                        CreatedDate = DateTime.UtcNow
+                    };
 
-                await _unitOfWork.Repository<RoleMenu>().AddAsync(roleMenu);
+                    await _unitOfWork.Repository<RoleMenu>().AddAsync(roleMenu);
+                }
             }
 
             await _unitOfWork.Save(cancellationToken);
@@ -354,7 +359,7 @@ public class MenuService : BaseService, IMenuService
         }
         catch (Exception ex)
         {
-            LogError($"Error occurred while assigning menus to role ID: {request.RoleId}", ex);
+            LogError("Error assigning menus to role", ex);
             return Result<int>.Failure("Failed to assign menus to role");
         }
     }
@@ -363,8 +368,6 @@ public class MenuService : BaseService, IMenuService
     {
         try
         {
-            LogInformation($"Getting role menus for role ID: {roleId}");
-
             var roleMenus = await _unitOfWork.Repository<RoleMenu>()
                 .Entities
                 .Include(rm => rm.Role)
@@ -373,12 +376,12 @@ public class MenuService : BaseService, IMenuService
                 .ToListAsync(cancellationToken);
 
             var response = _mapper.Map<List<RoleMenuResponse>>(roleMenus);
-            return Result<List<RoleMenuResponse>>.Success(response, "Role menus retrieved successfully");
+            return Result<List<RoleMenuResponse>>.Success(response, "Role menus retrieved");
         }
         catch (Exception ex)
         {
-            LogError($"Error occurred while getting role menus for role ID: {roleId}", ex);
-            return Result<List<RoleMenuResponse>>.Failure("Failed to retrieve role menus");
+            LogError("Error getting role menus", ex);
+            return Result<List<RoleMenuResponse>>.Failure("Failed to get role menus");
         }
     }
 
@@ -439,6 +442,5 @@ public class MenuService : BaseService, IMenuService
             .OrderBy(m => m.Order)
             .ToList();
     }
-
 }
 

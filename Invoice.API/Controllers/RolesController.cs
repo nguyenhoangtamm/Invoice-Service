@@ -1,10 +1,12 @@
 using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Invoice.API.Controllers;
 
+[Authorize]
 public class RolesController(ILogger<RolesController> logger, IRoleService roleService) : ApiControllerBase(logger)
 {
     [HttpPost("create")]
@@ -12,7 +14,7 @@ public class RolesController(ILogger<RolesController> logger, IRoleService roleS
     {
         try
         {
-            LogInformation($"Creating role with name: {request.Name}");
+            LogInformation($"Creating role");
 
             var result = await roleService.Create(request, cancellationToken);
 
@@ -36,14 +38,9 @@ public class RolesController(ILogger<RolesController> logger, IRoleService roleS
     {
         try
         {
-            if (id != request.Id)
-            {
-                return BadRequest("ID in route does not match ID in body");
-            }
+            LogInformation($"Updating role with ID: {id}");
 
-            LogInformation($"Updating role with ID: {request.Id}");
-
-            var result = await roleService.Update(request.Id, request, cancellationToken);
+            var result = await roleService.Update(id, request, cancellationToken);
 
             if (result.Succeeded)
             {
@@ -54,7 +51,7 @@ public class RolesController(ILogger<RolesController> logger, IRoleService roleS
         }
         catch (Exception ex)
         {
-            LogError($"Error updating role with ID: {request.Id}", ex);
+            LogError($"Error updating role with ID: {id}", ex);
             return StatusCode(500, "An error occurred while updating the role");
         }
     }
@@ -83,7 +80,7 @@ public class RolesController(ILogger<RolesController> logger, IRoleService roleS
         }
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("get-by-id/{id}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
         try
@@ -112,7 +109,7 @@ public class RolesController(ILogger<RolesController> logger, IRoleService roleS
     {
         try
         {
-            LogInformation($"Getting all roles");
+            LogInformation("Getting all roles");
 
             var result = await roleService.GetAll(cancellationToken);
 
@@ -131,13 +128,13 @@ public class RolesController(ILogger<RolesController> logger, IRoleService roleS
     }
 
     [HttpGet("get-pagination")]
-    public async Task<IActionResult> GetRolesWithPagination([FromQuery] GetRolesWithPaginationQuery query, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetRolesWithPagination([FromQuery] GetRolesWithPaginationQuery request, CancellationToken cancellationToken = default)
     {
         try
         {
-            LogInformation($"Getting roles with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+            LogInformation($"Getting roles with pagination - Page: {request.PageNumber}, Size: {request.PageSize}");
 
-            var result = await roleService.GetRolesWithPagination(query, cancellationToken);
+            var result = await roleService.GetRolesWithPagination(request, cancellationToken);
 
             if (result.Succeeded)
             {

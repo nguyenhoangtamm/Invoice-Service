@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Invoice.Domain.Enums;
+using Invoice.Domain.Entities;
 
 namespace Invoice.Domain.DTOs.Requests;
 
@@ -42,6 +43,8 @@ public record CreateInvoiceRequest
     public string? Cid { get; init; }
     public string? CidHash { get; init; }
     public string? MerkleProof { get; init; }
+
+    public List<InvoiceLine> Lines { get; init; }
 }
 
 public record UpdateInvoiceRequest
@@ -88,6 +91,14 @@ public record UpdateInvoiceRequest
 public record DeleteInvoiceRequest
 {
     public int Id { get; init; }
+}
+
+public record GetInvoiceWithPagination
+{
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public string? Keyword { get; set; }
+    public int? OrganizationId { get; set; }
 }
 
 // --- Merged action requests ---

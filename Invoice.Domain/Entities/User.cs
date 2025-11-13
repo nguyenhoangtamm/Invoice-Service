@@ -10,8 +10,6 @@ public class User : IdentityUser<int>, IAuditableEntity
     public string? FullName { get; set; }
     public UserStatus? Status { get; set; }
 
-    // Profile fields inline for ERD convenience
-    public string? FullName { get; set; }
     public string? Phone { get; set; }
 
     // Audit fields from IAuditableEntity
@@ -26,7 +24,7 @@ public class User : IdentityUser<int>, IAuditableEntity
     public int? UpdatedById { get; set; }
 
     public virtual Role Role { get; set; } = null!;
-    
+
     // JWT-related navigation properties
     public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     public virtual ICollection<TokenBlacklist> TokenBlacklists { get; set; } = new List<TokenBlacklist>();

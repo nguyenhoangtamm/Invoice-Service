@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Invoice.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddInvoiceBatchAndEnums : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -30,7 +30,9 @@ namespace Invoice.Infrastructure.Migrations
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedBy = table.Column<string>(type: "text", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -52,7 +54,9 @@ namespace Invoice.Infrastructure.Migrations
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -77,6 +81,8 @@ namespace Invoice.Infrastructure.Migrations
                     UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true),
                     Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "text", nullable: true)
@@ -98,7 +104,9 @@ namespace Invoice.Infrastructure.Migrations
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -138,7 +146,9 @@ namespace Invoice.Infrastructure.Migrations
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -166,11 +176,14 @@ namespace Invoice.Infrastructure.Migrations
                     RoleId = table.Column<int>(type: "integer", nullable: false),
                     FullName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
+                    Phone = table.Column<string>(type: "text", nullable: true),
                     CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
                     UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -299,7 +312,9 @@ namespace Invoice.Infrastructure.Migrations
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedBy = table.Column<string>(type: "text", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -331,7 +346,9 @@ namespace Invoice.Infrastructure.Migrations
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedBy = table.Column<string>(type: "text", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -350,7 +367,7 @@ namespace Invoice.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: true),
                     TokenHash = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
                     ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     IsRevoked = table.Column<bool>(type: "boolean", nullable: false),
@@ -409,7 +426,9 @@ namespace Invoice.Infrastructure.Migrations
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedBy = table.Column<string>(type: "text", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -460,7 +479,9 @@ namespace Invoice.Infrastructure.Migrations
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedBy = table.Column<string>(type: "text", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -505,7 +526,9 @@ namespace Invoice.Infrastructure.Migrations
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedBy = table.Column<string>(type: "text", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedById = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedById = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {

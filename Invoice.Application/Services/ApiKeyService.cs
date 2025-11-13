@@ -10,19 +10,21 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
+using AutoMapper.QueryableExtensions;
+using Invoice.Application.Extensions;
 
 namespace Invoice.Application.Services;
 
 public class ApiKeyService : BaseService, IApiKeyService
 {
-    private readonly IApiKeyRepository _apiKeyRepository;
 
     public ApiKeyService(IHttpContextAccessor httpContextAccessor, ILogger<ApiKeyService> logger,
-        IUnitOfWork unitOfWork, IMapper mapper, IApiKeyRepository apiKeyRepository)
+        IUnitOfWork unitOfWork, IMapper mapper)
         : base(httpContextAccessor, logger, unitOfWork, mapper)
     {
-        _apiKeyRepository = apiKeyRepository;
     }
+
 
     private static string ComputeHash(string key)
     {
@@ -40,7 +42,8 @@ public class ApiKeyService : BaseService, IApiKeyService
 
             var hash = ComputeHash(request.Key);
             // Ensure uniqueness
-            var exist = await _apiKeyRepository.GetByKeyHashAsync(hash);
+            var exist = await _unitOfWork.Repository<ApiKey>().Entities
+                .FirstOrDefaultAsync(k => k.KeyHash == hash, cancellationToken);
             if (exist != null) return Result<int>.Failure("Api key already exists");
 
             var apiKey = new ApiKey
@@ -53,7 +56,7 @@ public class ApiKeyService : BaseService, IApiKeyService
                 CreatedDate = DateTime.UtcNow
             };
 
-            await _apiKeyRepository.AddAsync(apiKey);
+            await _unitOfWork.Repository<ApiKey>().AddAsync(apiKey);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(apiKey.Id, "Api key created successfully");
@@ -71,7 +74,8 @@ public class ApiKeyService : BaseService, IApiKeyService
         {
             LogInformation($"Updating api key ID: {id}");
 
-            var apiKey = await _apiKeyRepository.GetByIdAsync(id);
+            var apiKey = await _unitOfWork.Repository<ApiKey>().Entities
+                .FirstOrDefaultAsync(k => k.Id == id, cancellationToken);
             if (apiKey == null) return Result<int>.Failure("Api key not found");
 
             if (request.Name != null) apiKey.Name = request.Name;
@@ -82,7 +86,7 @@ public class ApiKeyService : BaseService, IApiKeyService
             apiKey.UpdatedBy = UserName ?? "System";
             apiKey.UpdatedDate = DateTime.UtcNow;
 
-            await _apiKeyRepository.UpdateAsync(apiKey);
+            await _unitOfWork.Repository<ApiKey>().UpdateAsync(apiKey);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(apiKey.Id, "Api key updated successfully");
@@ -100,10 +104,10 @@ public class ApiKeyService : BaseService, IApiKeyService
         {
             LogInformation($"Deleting api key ID: {id}");
 
-            var apiKey = await _apiKeyRepository.GetByIdAsync(id);
+            var apiKey = await _unitOfWork.Repository<ApiKey>().GetByIdAsync(id);
             if (apiKey == null) return Result<int>.Failure("Api key not found");
 
-            await _apiKeyRepository.DeleteAsync(apiKey);
+            await _unitOfWork.Repository<ApiKey>().DeleteAsync(apiKey);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(apiKey.Id, "Api key deleted successfully");
@@ -119,7 +123,7 @@ public class ApiKeyService : BaseService, IApiKeyService
     {
         try
         {
-            var apiKey = await _apiKeyRepository.GetByIdAsync(id);
+            var apiKey = await _unitOfWork.Repository<ApiKey>().GetByIdAsync(id);
             if (apiKey == null) return Result<ApiKeyResponse>.Failure("Api key not found");
 
             var response = _mapper.Map<ApiKeyResponse>(apiKey);
@@ -136,7 +140,7 @@ public class ApiKeyService : BaseService, IApiKeyService
     {
         try
         {
-            var keys = await _apiKeyRepository.GetAllAsync();
+            var keys = await _unitOfWork.Repository<ApiKey>().GetAllAsync();
             var response = _mapper.Map<List<ApiKeyResponse>>(keys);
             return Result<List<ApiKeyResponse>>.Success(response, "Api keys retrieved");
         }
@@ -146,4 +150,28 @@ public class ApiKeyService : BaseService, IApiKeyService
             return Result<List<ApiKeyResponse>>.Failure("Failed to get api keys");
         }
     }
+    public async Task<Result<PaginatedResult<ApiKeyResponse>>> GetWithPagination(GetApiKeyWithPagination query, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Getting users with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+
+            var apiKeysQuery = _unitOfWork.Repository<ApiKey>().Entities.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                apiKeysQuery = apiKeysQuery.Where(k => k.Name.Contains(query.Keyword));
+            }
+            return await apiKeysQuery.OrderBy(x => x.CreatedDate)
+                .ProjectTo<ApiKeyResponse>(_mapper.ConfigurationProvider)
+                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken)
+                .ContinueWith(t => Result<PaginatedResult<ApiKeyResponse>>.Success(t.Result, "Api keys retrieved"), cancellationToken);
+
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting api keys with pagination", ex);
+            return Result<PaginatedResult<ApiKeyResponse>>.Failure("Failed to get api keys with pagination");
+        }
+    }
+
 }

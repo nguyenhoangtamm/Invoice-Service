@@ -1,4 +1,6 @@
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Invoice.Application.Extensions;
 using Invoice.Application.Interfaces;
 using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
@@ -14,15 +16,10 @@ namespace Invoice.Application.Services;
 
 public class InvoiceLineService : BaseService, IInvoiceLineService
 {
-    private readonly IInvoiceLineRepository _invoiceLineRepository;
-    private readonly IInvoiceRepository _invoiceRepository;
-
     public InvoiceLineService(IHttpContextAccessor httpContextAccessor, ILogger<InvoiceLineService> logger,
-        IUnitOfWork unitOfWork, IMapper mapper, IInvoiceLineRepository invoiceLineRepository, IInvoiceRepository invoiceRepository)
+        IUnitOfWork unitOfWork, IMapper mapper)
         : base(httpContextAccessor, logger, unitOfWork, mapper)
     {
-        _invoiceLineRepository = invoiceLineRepository;
-        _invoiceRepository = invoiceRepository;
     }
 
     public async Task<Result<int>> Create(CreateInvoiceLineRequest request, CancellationToken cancellationToken)
@@ -31,7 +28,7 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
         {
             LogInformation($"Creating invoice line for invoice: {request.InvoiceId}");
 
-            var invoice = await _invoiceRepository.GetByIdAsync(request.InvoiceId);
+            var invoice = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().GetByIdAsync(request.InvoiceId);
             if (invoice == null) return Result<int>.Failure("Invoice not found");
 
             var line = new InvoiceLine
@@ -42,15 +39,15 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
                 Unit = request.Unit,
                 Quantity = request.Quantity,
                 UnitPrice = request.UnitPrice,
-                Discount = request.Discount,
-                TaxRate = request.TaxRate,
-                TaxAmount = request.TaxAmount,
+                Discount = request.Discount ?? 0m,
+                TaxRate = request.TaxRate ?? 0m,
+                TaxAmount = request.TaxAmount ?? 0m,
                 LineTotal = request.LineTotal,
                 CreatedBy = UserName ?? "System",
                 CreatedDate = DateTime.UtcNow
             };
 
-            await _invoiceLineRepository.AddAsync(line);
+            await _unitOfWork.Repository<InvoiceLine>().AddAsync(line);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(line.Id, "Invoice line created successfully");
@@ -68,19 +65,19 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
         {
             LogInformation($"Updating invoice line ID: {id}");
 
-            var line = await _invoiceLineRepository.GetByIdAsync(id);
+            var line = await _unitOfWork.Repository<InvoiceLine>().GetByIdAsync(id);
             if (line == null) return Result<int>.Failure("Invoice line not found");
 
             if (request.InvoiceId.HasValue)
             {
-                var invoice = await _invoiceRepository.GetByIdAsync(request.InvoiceId.Value);
+                var invoice = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().GetByIdAsync(request.InvoiceId.Value);
                 if (invoice == null) return Result<int>.Failure("Invoice not found");
                 line.InvoiceId = request.InvoiceId.Value;
             }
 
             if (request.LineNumber.HasValue) line.LineNumber = request.LineNumber.Value;
-            line.Description = request.Description ?? line.Description;
-            line.Unit = request.Unit ?? line.Unit;
+            if (request.Description != null) line.Description = request.Description;
+            if (request.Unit != null) line.Unit = request.Unit;
             if (request.Quantity.HasValue) line.Quantity = request.Quantity.Value;
             if (request.UnitPrice.HasValue) line.UnitPrice = request.UnitPrice.Value;
             if (request.Discount.HasValue) line.Discount = request.Discount.Value;
@@ -88,17 +85,17 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
             if (request.TaxAmount.HasValue) line.TaxAmount = request.TaxAmount.Value;
             if (request.LineTotal.HasValue) line.LineTotal = request.LineTotal.Value;
 
-            line.UpdatedBy = UserName;
+            line.UpdatedBy = UserName ?? "System";
             line.UpdatedDate = DateTime.UtcNow;
 
-            await _invoiceLineRepository.UpdateAsync(line);
+            await _unitOfWork.Repository<InvoiceLine>().UpdateAsync(line);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(line.Id, "Invoice line updated successfully");
         }
         catch (Exception ex)
         {
-            LogError($"Error updating invoice line ID: {id}", ex);
+            LogError("Error updating invoice line", ex);
             return Result<int>.Failure("Failed to update invoice line");
         }
     }
@@ -109,21 +106,17 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
         {
             LogInformation($"Deleting invoice line ID: {id}");
 
-            var line = await _invoiceLineRepository.GetByIdAsync(id);
+            var line = await _unitOfWork.Repository<InvoiceLine>().GetByIdAsync(id);
             if (line == null) return Result<int>.Failure("Invoice line not found");
 
-            line.IsDeleted = true;
-            line.UpdatedBy = UserName;
-            line.UpdatedDate = DateTime.UtcNow;
-
-            await _invoiceLineRepository.UpdateAsync(line);
+            await _unitOfWork.Repository<InvoiceLine>().DeleteAsync(line);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(line.Id, "Invoice line deleted successfully");
         }
         catch (Exception ex)
         {
-            LogError($"Error deleting invoice line ID: {id}", ex);
+            LogError("Error deleting invoice line", ex);
             return Result<int>.Failure("Failed to delete invoice line");
         }
     }
@@ -132,16 +125,31 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
     {
         try
         {
-            var line = await _invoiceLineRepository.GetByIdAsync(id);
+            var line = await _unitOfWork.Repository<InvoiceLine>().GetByIdAsync(id);
             if (line == null) return Result<InvoiceLineResponse>.Failure("Invoice line not found");
 
-            var dto = _mapper.Map<InvoiceLineResponse>(line);
-            return Result<InvoiceLineResponse>.Success(dto, "Invoice line retrieved");
+            var response = _mapper.Map<InvoiceLineResponse>(line);
+            return Result<InvoiceLineResponse>.Success(response, "Invoice line retrieved");
         }
         catch (Exception ex)
         {
-            LogError($"Error getting invoice line ID: {id}", ex);
+            LogError("Error getting invoice line", ex);
             return Result<InvoiceLineResponse>.Failure("Failed to get invoice line");
+        }
+    }
+
+    public async Task<Result<List<InvoiceLineResponse>>> GetAll(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var lines = await _unitOfWork.Repository<InvoiceLine>().GetAllAsync();
+            var response = _mapper.Map<List<InvoiceLineResponse>>(lines);
+            return Result<List<InvoiceLineResponse>>.Success(response, "Invoice lines retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting invoice lines", ex);
+            return Result<List<InvoiceLineResponse>>.Failure("Failed to get invoice lines");
         }
     }
 
@@ -149,14 +157,40 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
     {
         try
         {
-            var list = await _invoiceLineRepository.GetByInvoiceIdAsync(invoiceId);
-            var dto = _mapper.Map<List<InvoiceLineResponse>>(list);
-            return Result<List<InvoiceLineResponse>>.Success(dto, "Invoice lines retrieved");
+            var lines = await _unitOfWork.Repository<InvoiceLine>().Entities
+                .Where(l => l.InvoiceId == invoiceId)
+                .ToListAsync(cancellationToken);
+            var response = _mapper.Map<List<InvoiceLineResponse>>(lines);
+            return Result<List<InvoiceLineResponse>>.Success(response, "Invoice lines retrieved");
         }
         catch (Exception ex)
         {
             LogError("Error getting invoice lines", ex);
             return Result<List<InvoiceLineResponse>>.Failure("Failed to get invoice lines");
+        }
+    }
+
+    public async Task<Result<PaginatedResult<InvoiceLineResponse>>> GetWithPagination(GetInvoiceLineWithPagination query, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Getting invoice lines with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+
+            var invoiceLinesQuery = _unitOfWork.Repository<InvoiceLine>().Entities.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                invoiceLinesQuery = invoiceLinesQuery.Where(l => l.Description.Contains(query.Keyword));
+            }
+            return await invoiceLinesQuery.OrderBy(x => x.CreatedDate)
+                .ProjectTo<InvoiceLineResponse>(_mapper.ConfigurationProvider)
+                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken)
+                .ContinueWith(t => Result<PaginatedResult<InvoiceLineResponse>>.Success(t.Result, "Invoice lines retrieved"), cancellationToken);
+
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting invoice lines with pagination", ex);
+            return Result<PaginatedResult<InvoiceLineResponse>>.Failure("Failed to get invoice lines with pagination");
         }
     }
 }

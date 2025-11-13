@@ -1,4 +1,6 @@
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Invoice.Application.Extensions;
 using Invoice.Application.Interfaces;
 using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
@@ -8,21 +10,17 @@ using Invoice.Domain.Interfaces;
 using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Invoice.Application.Services;
 
 public class InvoiceBatchService : BaseService, IInvoiceBatchService
 {
-    private readonly IInvoiceBatchRepository _batchRepository;
-    private readonly IInvoiceRepository _invoiceRepository;
-
     public InvoiceBatchService(IHttpContextAccessor httpContextAccessor, ILogger<InvoiceBatchService> logger,
-        IUnitOfWork unitOfWork, IMapper mapper, IInvoiceBatchRepository batchRepository, IInvoiceRepository invoiceRepository)
+        IUnitOfWork unitOfWork, IMapper mapper)
         : base(httpContextAccessor, logger, unitOfWork, mapper)
     {
-        _batchRepository = batchRepository;
-        _invoiceRepository = invoiceRepository;
     }
 
     public async Task<Result<int>> Create(CreateInvoiceBatchRequest request, CancellationToken cancellationToken)
@@ -46,7 +44,7 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
             };
 
             // persist to get generated Id
-            await _batchRepository.AddAsync(batch);
+            await _unitOfWork.Repository<InvoiceBatch>().AddAsync(batch);
             await _unitOfWork.Save(cancellationToken);
 
             var assignedCount = 0;
@@ -56,7 +54,7 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
             {
                 foreach (var invoiceId in request.InvoiceIds)
                 {
-                    var inv = await _invoiceRepository.GetByIdAsync(invoiceId);
+                    var inv = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().GetByIdAsync(invoiceId);
                     if (inv == null) continue;
                     if (inv.Status != InvoiceStatus.IpfsStored) continue; // only eligible invoices
 
@@ -64,7 +62,7 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
                     inv.Status = InvoiceStatus.Batched;
                     inv.UpdatedBy = UserName ?? "System";
                     inv.UpdatedDate = DateTime.UtcNow;
-                    await _invoiceRepository.UpdateAsync(inv);
+                    await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().UpdateAsync(inv);
                     assignedCount++;
                 }
             }
@@ -72,7 +70,7 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
             // If no eligible invoices were assigned, roll back batch creation
             if (assignedCount == 0)
             {
-                await _batchRepository.DeleteAsync(batch);
+                await _unitOfWork.Repository<InvoiceBatch>().DeleteAsync(batch);
                 await _unitOfWork.Save(cancellationToken);
                 return Result<int>.Failure("No eligible invoices (IPFS_STORED) provided for batching");
             }
@@ -82,7 +80,7 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
             batch.UpdatedBy = UserName ?? "System";
             batch.UpdatedDate = DateTime.UtcNow;
 
-            await _batchRepository.UpdateAsync(batch);
+            await _unitOfWork.Repository<InvoiceBatch>().UpdateAsync(batch);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(batch.Id, "Batch created successfully");
@@ -100,7 +98,7 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
         {
             LogInformation($"Updating batch ID: {id}");
 
-            var batch = await _batchRepository.GetByIdAsync(id);
+            var batch = await _unitOfWork.Repository<InvoiceBatch>().GetByIdAsync(id);
             if (batch == null) return Result<int>.Failure("Batch not found");
 
             if (!string.IsNullOrEmpty(request.BatchId)) batch.BatchId = request.BatchId!;
@@ -115,7 +113,7 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
             batch.UpdatedBy = UserName ?? "System";
             batch.UpdatedDate = DateTime.UtcNow;
 
-            await _batchRepository.UpdateAsync(batch);
+            await _unitOfWork.Repository<InvoiceBatch>().UpdateAsync(batch);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(batch.Id, "Batch updated successfully");
@@ -133,10 +131,10 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
         {
             LogInformation($"Deleting batch ID: {id}");
 
-            var batch = await _batchRepository.GetByIdAsync(id);
+            var batch = await _unitOfWork.Repository<InvoiceBatch>().GetByIdAsync(id);
             if (batch == null) return Result<int>.Failure("Batch not found");
 
-            await _batchRepository.DeleteAsync(batch);
+            await _unitOfWork.Repository<InvoiceBatch>().DeleteAsync(batch);
             await _unitOfWork.Save(cancellationToken);
 
             return Result<int>.Success(batch.Id, "Batch deleted successfully");
@@ -152,13 +150,11 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
     {
         try
         {
-            LogInformation($"Getting batch by ID: {id}");
-
-            var batch = await _batchRepository.GetByIdAsync(id);
+            var batch = await _unitOfWork.Repository<InvoiceBatch>().GetByIdAsync(id);
             if (batch == null) return Result<InvoiceBatchResponse>.Failure("Batch not found");
 
             var response = _mapper.Map<InvoiceBatchResponse>(batch);
-            return Result<InvoiceBatchResponse>.Success(response, "Batch retrieved successfully");
+            return Result<InvoiceBatchResponse>.Success(response, "Batch retrieved");
         }
         catch (Exception ex)
         {
@@ -171,16 +167,38 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
     {
         try
         {
-            LogInformation("Getting all batches");
-
-            var batches = await _batchRepository.GetAllAsync();
+            var batches = await _unitOfWork.Repository<InvoiceBatch>().GetAllAsync();
             var response = _mapper.Map<List<InvoiceBatchResponse>>(batches);
-            return Result<List<InvoiceBatchResponse>>.Success(response, "Batches retrieved successfully");
+            return Result<List<InvoiceBatchResponse>>.Success(response, "Batches retrieved");
         }
         catch (Exception ex)
         {
             LogError("Error getting batches", ex);
             return Result<List<InvoiceBatchResponse>>.Failure("Failed to get batches");
+        }
+    }
+
+    public async Task<Result<PaginatedResult<InvoiceBatchResponse>>> GetWithPagination(GetInvoiceBatchWithPagination query, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Getting batches with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+
+            var batchesQuery = _unitOfWork.Repository<InvoiceBatch>().Entities.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                batchesQuery = batchesQuery.Where(b => b.BatchId.Contains(query.Keyword));
+            }
+            return await batchesQuery.OrderBy(x => x.CreatedDate)
+                .ProjectTo<InvoiceBatchResponse>(_mapper.ConfigurationProvider)
+                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken)
+                .ContinueWith(t => Result<PaginatedResult<InvoiceBatchResponse>>.Success(t.Result, "Batches retrieved"), cancellationToken);
+
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting batches with pagination", ex);
+            return Result<PaginatedResult<InvoiceBatchResponse>>.Failure("Failed to get batches with pagination");
         }
     }
 }

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Invoice.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251112035759_ErdUpdate")]
-    partial class ErdUpdate
+    [Migration("20251113154933_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -34,13 +34,10 @@ namespace Invoice.Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Active")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
+                        .HasColumnType("boolean");
 
                     b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -49,18 +46,16 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasColumnType("boolean");
 
                     b.Property<string>("KeyHash")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("Name")
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<int>("OrganizationId")
                         .HasColumnType("integer");
@@ -69,8 +64,7 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -82,7 +76,7 @@ namespace Invoice.Infrastructure.Migrations
 
                     b.HasIndex("OrganizationId");
 
-                    b.ToTable("ApiKeys", (string)null);
+                    b.ToTable("Api_Keys", (string)null);
                 });
 
             modelBuilder.Entity("Invoice.Domain.Entities.Invoice", b =>
@@ -97,14 +91,15 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Cid")
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("CidHash")
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -121,43 +116,41 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<string>("CustomerEmail")
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("CustomerName")
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("CustomerPhone")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("CustomerTaxId")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<string>("CustomerTaxId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<decimal>("DiscountAmount")
+                    b.Property<decimal?>("DiscountAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("FormNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("ImmutableHash")
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("InvoiceNumber")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasColumnType("boolean");
 
-                    b.Property<int>("IssuedByUserId")
+                    b.Property<int?>("IssuedByUserId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("IssuedDate")
@@ -167,55 +160,53 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Note")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("SellerAddress")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
                     b.Property<string>("SellerEmail")
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("SellerName")
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("SellerPhone")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<string>("SellerTaxId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("Serial")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<string>("Status")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<decimal>("Subtotal")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal>("TaxAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<int>("TenantOrganizationId")
+                    b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("TotalAmount")
+                    b.Property<decimal?>("SubTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("TaxAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -229,7 +220,7 @@ namespace Invoice.Infrastructure.Migrations
 
                     b.HasIndex("IssuedByUserId");
 
-                    b.HasIndex("TenantOrganizationId");
+                    b.HasIndex("OrganizationId");
 
                     b.ToTable("Invoices", (string)null);
                 });
@@ -243,12 +234,13 @@ namespace Invoice.Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("BatchCid")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("BatchId")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("BatchId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<long?>("BlockNumber")
                         .HasColumnType("bigint");
@@ -260,8 +252,7 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -270,23 +261,21 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasColumnType("boolean");
 
                     b.Property<string>("MerkleRoot")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
-                    b.Property<int?>("Status")
+                    b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.Property<string>("TxHash")
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -296,7 +285,10 @@ namespace Invoice.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("InvoiceBatches", (string)null);
+                    b.HasIndex("BatchId")
+                        .IsUnique();
+
+                    b.ToTable("Invoice_Batches", (string)null);
                 });
 
             modelBuilder.Entity("Invoice.Domain.Entities.InvoiceLine", b =>
@@ -308,8 +300,7 @@ namespace Invoice.Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -321,7 +312,7 @@ namespace Invoice.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<decimal>("Discount")
+                    b.Property<decimal?>("Discount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
@@ -329,9 +320,7 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasColumnType("boolean");
 
                     b.Property<int>("LineNumber")
                         .HasColumnType("integer");
@@ -341,14 +330,14 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)");
 
                     b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<decimal?>("TaxAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<decimal>("TaxAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal>("TaxRate")
+                    b.Property<decimal?>("TaxRate")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
 
@@ -361,8 +350,7 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -372,9 +360,10 @@ namespace Invoice.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InvoiceId");
+                    b.HasIndex("InvoiceId", "LineNumber")
+                        .IsUnique();
 
-                    b.ToTable("InvoiceLines", (string)null);
+                    b.ToTable("Invoice_Lines", (string)null);
                 });
 
             modelBuilder.Entity("Invoice.Domain.Entities.Menu", b =>
@@ -447,8 +436,7 @@ namespace Invoice.Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -457,38 +445,35 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasColumnType("boolean");
 
                     b.Property<string>("OrganizationAddress")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
                     b.Property<string>("OrganizationBankAccount")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("OrganizationEmail")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("OrganizationEmail")
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
-
                     b.Property<string>("OrganizationName")
                         .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("OrganizationPhone")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("OrganizationTaxId")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<string>("OrganizationTaxId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -496,7 +481,7 @@ namespace Invoice.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("UserId")
+                    b.Property<int>("UserId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -610,7 +595,7 @@ namespace Invoice.Infrastructure.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
-                    b.Property<int>("UserId")
+                    b.Property<int?>("UserId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -866,7 +851,8 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("FullName")
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
@@ -1063,14 +1049,13 @@ namespace Invoice.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Invoice.Domain.Entities.User", "IssuedByUser")
-                        .WithMany()
+                        .WithMany("IssuedInvoices")
                         .HasForeignKey("IssuedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Invoice.Domain.Entities.Organization", "TenantOrganization")
+                    b.HasOne("Invoice.Domain.Entities.Organization", "Organization")
                         .WithMany("Invoices")
-                        .HasForeignKey("TenantOrganizationId")
+                        .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1078,7 +1063,7 @@ namespace Invoice.Infrastructure.Migrations
 
                     b.Navigation("IssuedByUser");
 
-                    b.Navigation("TenantOrganization");
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("Invoice.Domain.Entities.InvoiceLine", b =>
@@ -1105,9 +1090,10 @@ namespace Invoice.Infrastructure.Migrations
             modelBuilder.Entity("Invoice.Domain.Entities.Organization", b =>
                 {
                     b.HasOne("Invoice.Domain.Entities.User", "User")
-                        .WithMany()
+                        .WithMany("Organizations")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -1128,8 +1114,7 @@ namespace Invoice.Infrastructure.Migrations
                     b.HasOne("Invoice.Domain.Entities.User", "User")
                         .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("User");
                 });
@@ -1158,7 +1143,7 @@ namespace Invoice.Infrastructure.Migrations
                     b.HasOne("Invoice.Domain.Entities.User", "User")
                         .WithMany("TokenBlacklists")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("User");
                 });
@@ -1258,6 +1243,10 @@ namespace Invoice.Infrastructure.Migrations
 
             modelBuilder.Entity("Invoice.Domain.Entities.User", b =>
                 {
+                    b.Navigation("IssuedInvoices");
+
+                    b.Navigation("Organizations");
+
                     b.Navigation("Profile");
 
                     b.Navigation("RefreshTokens");

@@ -11,4 +11,5 @@ public interface IInvoiceBatchService
     Task<Result<int>> Delete(int id, CancellationToken cancellationToken);
     Task<Result<InvoiceBatchResponse>> GetById(int id, CancellationToken cancellationToken);
     Task<Result<List<InvoiceBatchResponse>>> GetAll(CancellationToken cancellationToken);
+    Task<Result<PaginatedResult<InvoiceBatchResponse>>> GetWithPagination(GetInvoiceBatchWithPagination request, CancellationToken cancellationToken);
 }

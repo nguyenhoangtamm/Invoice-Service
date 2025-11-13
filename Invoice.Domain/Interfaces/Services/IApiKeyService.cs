@@ -11,4 +11,5 @@ public interface IApiKeyService
     Task<Result<int>> Delete(int id, CancellationToken cancellationToken);
     Task<Result<ApiKeyResponse>> GetById(int id, CancellationToken cancellationToken);
     Task<Result<List<ApiKeyResponse>>> GetAll(CancellationToken cancellationToken);
+    Task<Result<PaginatedResult<ApiKeyResponse>>> GetWithPagination(GetApiKeyWithPagination request, CancellationToken cancellationToken);
 }
