@@ -25,6 +25,14 @@ public class ApiKeyService : BaseService, IApiKeyService
     {
     }
 
+    private static string GenerateApiKey()
+    {
+        // Generate a secure random API key
+        using var rng = RandomNumberGenerator.Create();
+        var bytes = new byte[32]; // 256 bits
+        rng.GetBytes(bytes);
+        return Convert.ToBase64String(bytes).Replace("+", "-").Replace("/", "_").Replace("=", "");
+    }
 
     private static string ComputeHash(string key)
     {
@@ -34,37 +42,67 @@ public class ApiKeyService : BaseService, IApiKeyService
         return Convert.ToHexString(hash); // .NET 5+
     }
 
-    public async Task<Result<int>> Create(CreateApiKeyRequest request, CancellationToken cancellationToken)
+    public async Task<Result<CreateApiKeyResponse>> Create(CreateApiKeyRequest request, CancellationToken cancellationToken)
     {
         try
         {
             LogInformation($"Creating API key for org: {request.OrganizationId}");
 
-            var hash = ComputeHash(request.Key);
-            // Ensure uniqueness
-            var exist = await _unitOfWork.Repository<ApiKey>().Entities
-                .FirstOrDefaultAsync(k => k.KeyHash == hash, cancellationToken);
-            if (exist != null) return Result<int>.Failure("Api key already exists");
+            // Generate a new API key
+            string apiKey;
+            string hash;
 
-            var apiKey = new ApiKey
+            // Ensure uniqueness by regenerating if hash already exists
+            do
+            {
+                apiKey = GenerateApiKey();
+                hash = ComputeHash(apiKey);
+
+                var exists = await _unitOfWork.Repository<ApiKey>().Entities
+                    .AnyAsync(k => k.KeyHash == hash, cancellationToken);
+
+                if (!exists) break;
+
+            } while (true);
+
+            // Calculate expiration time
+            DateTime? expiresAt = null;
+            if (request.ExpirationDays.HasValue && request.ExpirationDays.Value > 0)
+            {
+                expiresAt = DateTime.UtcNow.AddDays(request.ExpirationDays.Value);
+            }
+
+            var apiKeyEntity = new ApiKey
             {
                 KeyHash = hash,
                 Name = request.Name,
                 Active = request.Active,
                 OrganizationId = request.OrganizationId,
+                ExpiresAt = expiresAt,
                 CreatedBy = UserName ?? "System",
                 CreatedDate = DateTime.UtcNow
             };
 
-            await _unitOfWork.Repository<ApiKey>().AddAsync(apiKey);
+            await _unitOfWork.Repository<ApiKey>().AddAsync(apiKeyEntity);
             await _unitOfWork.Save(cancellationToken);
 
-            return Result<int>.Success(apiKey.Id, "Api key created successfully");
+            var response = new CreateApiKeyResponse
+            {
+                Id = apiKeyEntity.Id,
+                Name = apiKeyEntity.Name,
+                ApiKey = apiKey, // Return the actual API key to the user
+                Active = apiKeyEntity.Active,
+                ExpiresAt = apiKeyEntity.ExpiresAt,
+                OrganizationId = apiKeyEntity.OrganizationId,
+                CreatedDate = apiKeyEntity.CreatedDate ?? DateTime.UtcNow
+            };
+
+            return Result<CreateApiKeyResponse>.Success(response, "Api key created successfully");
         }
         catch (Exception ex)
         {
             LogError("Error creating api key", ex);
-            return Result<int>.Failure("Failed to create api key");
+            return Result<CreateApiKeyResponse>.Failure("Failed to create api key");
         }
     }
 
@@ -174,4 +212,35 @@ public class ApiKeyService : BaseService, IApiKeyService
         }
     }
 
+    public async Task<Result<ApiKeyResponse>> ValidateApiKey(string apiKey, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation("Validating API key");
+
+            var hash = ComputeHash(apiKey);
+            var apiKeyEntity = await _unitOfWork.Repository<ApiKey>().Entities
+                .Include(k => k.Organization)
+                .FirstOrDefaultAsync(k => k.KeyHash == hash && k.Active && k.RevokedAt == null, cancellationToken);
+
+            if (apiKeyEntity == null)
+            {
+                return Result<ApiKeyResponse>.Failure("Invalid or inactive API key");
+            }
+
+            // Ki?m tra xem API key có h?t h?n hay không
+            if (apiKeyEntity.ExpiresAt.HasValue && apiKeyEntity.ExpiresAt.Value < DateTime.UtcNow)
+            {
+                return Result<ApiKeyResponse>.Failure("API key has expired");
+            }
+
+            var response = _mapper.Map<ApiKeyResponse>(apiKeyEntity);
+            return Result<ApiKeyResponse>.Success(response, "API key is valid");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error validating API key", ex);
+            return Result<ApiKeyResponse>.Failure("Failed to validate API key");
+        }
+    }
 }

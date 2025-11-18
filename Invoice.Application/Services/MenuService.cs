@@ -34,9 +34,9 @@ public class MenuService : BaseService, IMenuService
         {
             LogInformation($"Creating menu: {request.Name}");
 
-            // Check for duplicate menu name
+            // Check for duplicate menu name - Global Query Filter s? t? ??ng lo?i b? IsDeleted = true
             var existingMenu = await _unitOfWork.Repository<Menu>().Entities
-                .FirstOrDefaultAsync(m => m.Name == request.Name && !m.IsDeleted, cancellationToken);
+                .FirstOrDefaultAsync(m => m.Name == request.Name, cancellationToken);
 
             if (existingMenu != null)
             {
@@ -72,7 +72,7 @@ public class MenuService : BaseService, IMenuService
             if (!string.IsNullOrWhiteSpace(request.Name))
             {
                 var existingMenu = await _unitOfWork.Repository<Menu>().Entities
-                    .FirstOrDefaultAsync(m => m.Name == request.Name && m.Id != id && !m.IsDeleted, cancellationToken);
+                    .FirstOrDefaultAsync(m => m.Name == request.Name && m.Id != id, cancellationToken);
 
                 if (existingMenu != null)
                 {
@@ -84,7 +84,7 @@ public class MenuService : BaseService, IMenuService
             if (!string.IsNullOrWhiteSpace(request.Path))
             {
                 var existingPathMenu = await _unitOfWork.Repository<Menu>().Entities
-                    .FirstOrDefaultAsync(m => m.Path == request.Path && m.Id != id && !m.IsDeleted, cancellationToken);
+                    .FirstOrDefaultAsync(m => m.Path == request.Path && m.Id != id, cancellationToken);
 
                 if (existingPathMenu != null)
                 {
@@ -117,10 +117,10 @@ public class MenuService : BaseService, IMenuService
             var menu = await _unitOfWork.Repository<Menu>().GetByIdAsync(id);
             if (menu == null) return Result<int>.Failure("Menu not found");
 
-            // Check if menu has children
+            // Check if menu has children - Global Query Filter s? t? ??ng lo?i b? IsDeleted = true
             var hasChildren = await _unitOfWork.Repository<Menu>()
                 .Entities
-                .AnyAsync(m => m.ParentId == id && !m.IsDeleted, cancellationToken);
+                .AnyAsync(m => m.ParentId == id, cancellationToken);
 
             if (hasChildren)
             {
@@ -152,7 +152,7 @@ public class MenuService : BaseService, IMenuService
                 .Entities
                 .Include(m => m.Children)
                 .Include(m => m.Parent)
-                .FirstOrDefaultAsync(m => m.Id == id && !m.IsDeleted, cancellationToken);
+                .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
 
             if (menu == null) return Result<MenuResponse>.Failure("Menu not found");
 
@@ -170,10 +170,10 @@ public class MenuService : BaseService, IMenuService
     {
         try
         {
+            // Global Query Filter s? t? ??ng lo?i b? các menu có IsDeleted = true
             var menus = await _unitOfWork.Repository<Menu>()
                 .Entities
                 .Include(m => m.Children)
-                .Where(m => !m.IsDeleted)
                 .OrderBy(m => m.Order)
                 .ToListAsync(cancellationToken);
 
@@ -193,11 +193,11 @@ public class MenuService : BaseService, IMenuService
         {
             LogInformation($"Getting menus with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
 
+            // Global Query Filter s? t? ??ng lo?i b? các menu có IsDeleted = true
             var menusQuery = _unitOfWork.Repository<Menu>()
                 .Entities
                 .Include(m => m.Children)
                 .Include(m => m.Parent)
-                .Where(m => !m.IsDeleted)
                 .AsQueryable();
 
             // Apply keyword filter if provided
@@ -225,9 +225,9 @@ public class MenuService : BaseService, IMenuService
         {
             LogInformation("Getting menu tree");
 
+            // Global Query Filter s? t? ??ng lo?i b? các menu có IsDeleted = true
             var menus = await _unitOfWork.Repository<Menu>()
                 .Entities
-                .Where(m => !m.IsDeleted)
                 .OrderBy(m => m.Order)
                 .ToListAsync(cancellationToken);
 
@@ -249,11 +249,11 @@ public class MenuService : BaseService, IMenuService
         {
             LogInformation($"Getting menu tree by role ID: {roleId}");
 
-            // Get role menus
+            // Get role menus - Global Query Filter s? t? ??ng lo?i b? IsDeleted = true
             var roleMenus = await _unitOfWork.Repository<RoleMenu>()
                 .Entities
                 .Include(rm => rm.Menu)
-                .Where(rm => rm.RoleId == roleId && !rm.IsDeleted && !rm.Menu.IsDeleted)
+                .Where(rm => rm.RoleId == roleId)
                 .Select(rm => rm.Menu)
                 .OrderBy(m => m.Order)
                 .ToListAsync(cancellationToken);
@@ -261,7 +261,6 @@ public class MenuService : BaseService, IMenuService
             // Get all menus for building tree structure
             var allMenus = await _unitOfWork.Repository<Menu>()
                 .Entities
-                .Where(m => !m.IsDeleted)
                 .OrderBy(m => m.Order)
                 .ToListAsync(cancellationToken);
 
@@ -296,11 +295,11 @@ public class MenuService : BaseService, IMenuService
                 return Result<List<UserMenuResponse>>.Failure("User not found");
             }
 
-            // Get user's role menus
+            // Get user's role menus - Global Query Filter s? t? ??ng lo?i b? IsDeleted = true
             var roleMenus = await _unitOfWork.Repository<RoleMenu>()
                 .Entities
                 .Include(rm => rm.Menu)
-                .Where(rm => rm.RoleId == user.RoleId && !rm.IsDeleted && !rm.Menu.IsDeleted)
+                .Where(rm => rm.RoleId == user.RoleId)
                 .Select(rm => rm.Menu)
                 .OrderBy(m => m.Order)
                 .ToListAsync(cancellationToken);
@@ -322,10 +321,10 @@ public class MenuService : BaseService, IMenuService
         {
             LogInformation($"Assigning menus to role ID: {request.RoleId}");
 
-            // Remove existing role menus
+            // Remove existing role menus - Global Query Filter s? t? ??ng lo?i b? IsDeleted = true
             var existingRoleMenus = await _unitOfWork.Repository<RoleMenu>()
                 .Entities
-                .Where(rm => rm.RoleId == request.RoleId && !rm.IsDeleted)
+                .Where(rm => rm.RoleId == request.RoleId)
                 .ToListAsync(cancellationToken);
 
             foreach (var roleMenu in existingRoleMenus)
@@ -367,11 +366,12 @@ public class MenuService : BaseService, IMenuService
     {
         try
         {
+            // Global Query Filter s? t? ??ng lo?i b? các RoleMenu có IsDeleted = true
             var roleMenus = await _unitOfWork.Repository<RoleMenu>()
                 .Entities
                 .Include(rm => rm.Role)
                 .Include(rm => rm.Menu)
-                .Where(rm => rm.RoleId == roleId && !rm.IsDeleted && !rm.Menu.IsDeleted)
+                .Where(rm => rm.RoleId == roleId)
                 .ToListAsync(cancellationToken);
 
             var response = _mapper.Map<List<RoleMenuResponse>>(roleMenus);

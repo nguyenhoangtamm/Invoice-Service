@@ -1,13 +1,13 @@
-using System;
+﻿using System;
 
 namespace Invoice.Domain.DTOs.Requests;
 
 public record CreateApiKeyRequest
 {
-    public string Key { get; init; } = string.Empty; // raw key provided/generated
     public string? Name { get; init; }
     public bool Active { get; init; } = true;
     public int OrganizationId { get; init; }
+    public int? ExpirationDays { get; init; } // Số ngày cho đến khi hết hạn (null = không hết hạn)
 }
 
 public record UpdateApiKeyRequest
@@ -16,6 +16,7 @@ public record UpdateApiKeyRequest
     public string? Name { get; init; }
     public bool? Active { get; init; }
     public DateTime? RevokedAt { get; init; }
+    public DateTime? ExpiresAt { get; init; }
     public int? OrganizationId { get; init; }
 }
 

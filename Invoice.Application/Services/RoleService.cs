@@ -137,7 +137,7 @@ public class RoleService : BaseService, IRoleService
             LogInformation($"Getting role with ID: {id}");
 
             var role = await _roleManager.FindByIdAsync(id.ToString());
-            if (role == null || role.IsDeleted)
+            if (role == null)
             {
                 return Result<object>.Failure("Role not found");
             }
@@ -168,8 +168,8 @@ public class RoleService : BaseService, IRoleService
         {
             LogInformation("Getting all roles");
 
+            // Global Query Filter s? t? ??ng lo?i b? các role có IsDeleted = true
             var roles = await _roleManager.Roles
-                .Where(x => !x.IsDeleted)
                 .Select(role => new
                 {
                     role.Id,
@@ -198,8 +198,8 @@ public class RoleService : BaseService, IRoleService
         {
             LogInformation($"Getting roles with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
 
-            var rolesQuery = _roleManager.Roles
-                .Where(x => !x.IsDeleted);
+            // Global Query Filter s? t? ??ng lo?i b? các role có IsDeleted = true
+            var rolesQuery = _roleManager.Roles.AsQueryable();
 
             if (!string.IsNullOrEmpty(query.SearchTerm))
             {

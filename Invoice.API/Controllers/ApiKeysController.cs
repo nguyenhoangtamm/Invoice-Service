@@ -13,18 +13,18 @@ public class ApiKeysController(ILogger<ApiKeysController> logger, IApiKeyService
     private readonly IApiKeyService _apiKeyService = apiKeyService;
 
     [HttpPost("create")]
-    public async Task<ActionResult<Result<int>>> Create([FromBody] CreateApiKeyRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<CreateApiKeyResponse>>> Create([FromBody] CreateApiKeyRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            LogInformation($"Creating API key");
+            LogInformation($"Creating API key with expiration: {request.ExpirationDays} days");
 
             return await _apiKeyService.Create(request, cancellationToken);
         }
         catch (Exception ex)
         {
             LogError("Error creating API key", ex);
-            return StatusCode(500, Result<int>.Failure("An error occurred while creating the API key"));
+            return StatusCode(500, Result<CreateApiKeyResponse>.Failure("An error occurred while creating the API key"));
         }
     }
 

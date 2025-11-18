@@ -34,6 +34,48 @@ public class ApplicationDbContext : IdentityDbContext<DomainEntities.User, Domai
         
         // Apply all IEntityTypeConfiguration implementations in this assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+        // Apply Global Query Filters for soft delete
+        ApplyGlobalQueryFilters(modelBuilder);
+    }
+
+    private void ApplyGlobalQueryFilters(ModelBuilder modelBuilder)
+    {
+        // Apply global query filter for all entities that implement IAuditableEntity
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            var clrType = entityType.ClrType;
+            
+            // Check if the entity implements IAuditableEntity
+            if (typeof(IAuditableEntity).IsAssignableFrom(clrType))
+            {
+                // Create a parameter expression for the entity
+                var parameter = System.Linq.Expressions.Expression.Parameter(clrType, "e");
+                
+                // Create the property access expression for IsDeleted
+                var propertyAccess = System.Linq.Expressions.Expression.Property(parameter, nameof(IAuditableEntity.IsDeleted));
+                
+                // Create the comparison expression: IsDeleted == false
+                var comparison = System.Linq.Expressions.Expression.Equal(propertyAccess, System.Linq.Expressions.Expression.Constant(false));
+                
+                // Create the lambda expression: e => e.IsDeleted == false
+                var lambda = System.Linq.Expressions.Expression.Lambda(comparison, parameter);
+                
+                // Apply the global query filter
+                modelBuilder.Entity(clrType).HasQueryFilter(lambda);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Temporarily ignore global query filters for specific operations
+    /// Call this method when you need to access soft-deleted records
+    /// </summary>
+    /// <returns>DbContext with query filters ignored</returns>
+    public ApplicationDbContext IgnoreQueryFilters()
+    {
+        ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        return this;
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

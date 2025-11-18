@@ -7,8 +7,8 @@ public class CreateApiKeyRequestValidator : AbstractValidator<CreateApiKeyReques
 {
     public CreateApiKeyRequestValidator()
     {
-        RuleFor(x => x.Key).NotEmpty().MinimumLength(20);
         RuleFor(x => x.Name).MaximumLength(200).When(x => !string.IsNullOrEmpty(x.Name));
         RuleFor(x => x.OrganizationId).GreaterThan(0);
+        RuleFor(x => x.ExpirationDays).GreaterThan(0).When(x => x.ExpirationDays.HasValue);
     }
 }

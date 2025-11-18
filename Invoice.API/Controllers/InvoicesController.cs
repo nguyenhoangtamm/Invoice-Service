@@ -4,6 +4,7 @@ using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Invoice.API.Attributes;
 
 namespace Invoice.API.Controllers;
 
@@ -25,6 +26,38 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
         {
             LogError("Error creating invoice", ex);
             return StatusCode(500, Result<int>.Failure("An error occurred while creating the invoice"));
+        }
+    }
+
+    // New API endpoint for uploading invoices with API key authentication
+    [HttpPost("upload")]
+    [ApiKeyAuth]
+    [AllowAnonymous] // Override the controller's Authorize attribute since we're using API key auth
+    public async Task<ActionResult<Result<int>>> UploadInvoice([FromBody] CreateInvoiceRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation("Uploading invoice via API key authentication");
+
+            // Get organization ID from API key validation result
+            var organizationId = HttpContext.Items["OrganizationId"] as int?;
+            if (!organizationId.HasValue)
+            {
+                return BadRequest(Result<int>.Failure("Invalid API key - organization not found"));
+            }
+
+            // Set the organization ID from the API key
+            var uploadRequest = request with { OrganizationId = organizationId.Value };
+
+            // Log API key usage
+            LogInformation($"Invoice upload via API key for organization: {organizationId}");
+
+            return await _invoiceService.Create(uploadRequest, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogError("Error uploading invoice via API key", ex);
+            return StatusCode(500, Result<int>.Failure("An error occurred while uploading the invoice"));
         }
     }
 
