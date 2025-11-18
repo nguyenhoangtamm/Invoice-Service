@@ -11,6 +11,9 @@ public record CreateInvoiceRequest
     public string? FormNumber { get; init; }
     public string? Serial { get; init; }
 
+    // Public lookup code (optional when creating)
+    public string? LookupCode { get; init; }
+
     public int OrganizationId { get; init; }
     public int? IssuedByUserId { get; init; }
 
@@ -53,6 +56,9 @@ public record UpdateInvoiceRequest
     public string? InvoiceNumber { get; init; }
     public string? FormNumber { get; init; }
     public string? Serial { get; init; }
+
+    // Public lookup code
+    public string? LookupCode { get; init; }
 
     public int? OrganizationId { get; init; }
     public int? IssuedByUserId { get; init; }
@@ -98,6 +104,15 @@ public record GetInvoiceWithPagination
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;
     public string? Keyword { get; set; }
+    public int? OrganizationId { get; set; }
+}
+
+public record GetInvoiceByUserWithPagination
+{
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public string? Keyword { get; set; }
+    public int UserId { get; set; }
     public int? OrganizationId { get; set; }
 }
 

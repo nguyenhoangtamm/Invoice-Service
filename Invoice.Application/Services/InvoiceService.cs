@@ -57,6 +57,7 @@ public class InvoiceService : BaseService, IInvoiceService
                 InvoiceNumber = request.InvoiceNumber,
                 FormNumber = request.FormNumber,
                 Serial = request.Serial,
+                LookupCode = string.IsNullOrWhiteSpace(request.LookupCode) ? GenerateLookupCode() : request.LookupCode,
                 OrganizationId = request.OrganizationId,
                 IssuedByUserId = request.IssuedByUserId,
                 SellerName = request.SellerName,
@@ -134,6 +135,7 @@ public class InvoiceService : BaseService, IInvoiceService
             if (request.InvoiceNumber != null) entity.InvoiceNumber = request.InvoiceNumber;
             if (request.FormNumber != null) entity.FormNumber = request.FormNumber;
             if (request.Serial != null) entity.Serial = request.Serial;
+            if (request.LookupCode != null) entity.LookupCode = request.LookupCode;
             if (request.Status.HasValue) entity.Status = request.Status.Value;
             if (request.IssuedDate.HasValue) entity.IssuedDate = request.IssuedDate;
             if (request.SubTotal.HasValue) entity.SubTotal = request.SubTotal.Value;
@@ -250,6 +252,38 @@ public class InvoiceService : BaseService, IInvoiceService
         }
     }
 
+    public async Task<PaginatedResult<InvoiceResponse>> GetByUserWithPagination(GetInvoiceByUserWithPagination query, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Getting invoices by user {query.UserId} with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+
+            var invoicesQuery = _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
+                .AsNoTracking()
+                .Include(i => i.Lines)
+                .Where(i => i.IssuedByUserId == query.UserId);
+
+            if (query.OrganizationId.HasValue)
+                invoicesQuery = invoicesQuery.Where(i => i.OrganizationId == query.OrganizationId.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                var k = query.Keyword.Trim().ToLower();
+                invoicesQuery = invoicesQuery.Where(i => i.InvoiceNumber.ToLower().Contains(k) ||
+                                                         (i.CustomerName != null && i.CustomerName.ToLower().Contains(k)));
+            }
+
+            return await invoicesQuery.OrderByDescending(x => x.IssuedDate)
+                .ProjectTo<InvoiceResponse>(_mapper.ConfigurationProvider)
+                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error getting invoices by user {query.UserId} with pagination", ex);
+            throw new Exception("An error occurred while retrieving invoices by user with pagination");
+        }
+    }
+
     public async Task<Result<VerifyInvoiceResponse>> VerifyInvoiceAsync(int invoiceId, CancellationToken cancellationToken)
     {
         try
@@ -332,5 +366,36 @@ public class InvoiceService : BaseService, IInvoiceService
             LogError("Error verifying invoice", ex);
             return Result<VerifyInvoiceResponse>.Failure("Failed to verify invoice");
         }
+    }
+
+    // Public lookup implementation
+    public async Task<Result<InvoiceResponse>> LookupByCode(string lookupCode, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(lookupCode))
+                return Result<InvoiceResponse>.Failure("Lookup code is required");
+
+            var entity = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
+                .AsNoTracking()
+                .Include(i => i.Lines)
+                .FirstOrDefaultAsync(i => i.LookupCode == lookupCode, cancellationToken);
+
+            if (entity == null) return Result<InvoiceResponse>.Failure("Invoice not found");
+
+            var response = _mapper.Map<InvoiceResponse>(entity);
+            return Result<InvoiceResponse>.Success(response, "Invoice retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error looking up invoice", ex);
+            return Result<InvoiceResponse>.Failure("Failed to lookup invoice");
+        }
+    }
+
+    private string GenerateLookupCode()
+    {
+        // Simple random short code - you can replace with any scheme (e.g., hash of invoice id + salt)
+        return Guid.NewGuid().ToString("N").Substring(0, 10).ToUpper();
     }
 }

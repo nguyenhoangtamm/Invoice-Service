@@ -9,6 +9,9 @@ public class Invoice : BaseAuditableEntity
     public string? FormNumber { get; set; }
     public string? Serial { get; set; }
 
+    // Lookup code used for public invoice lookup
+    public string? LookupCode { get; set; }
+
     public int OrganizationId { get; set; }
     public Organization Organization { get; set; } = default!;
 

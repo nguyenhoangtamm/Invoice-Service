@@ -166,4 +166,25 @@ public class OrganizationService : BaseService, IOrganizationService
             throw new Exception("An error occurred while retrieving orgnization with pagination");
         }
     }
+
+    // New method: get organization by its owner user id
+    public async Task<Result<OrganizationResponse>> GetByUserId(int userId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var org = await _unitOfWork.Repository<Organization>().Entities
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.UserId == userId, cancellationToken);
+
+            if (org == null) return Result<OrganizationResponse>.Failure("Organization not found for user");
+
+            var response = _mapper.Map<OrganizationResponse>(org);
+            return Result<OrganizationResponse>.Success(response, "Organization retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error getting organization for user {userId}", ex);
+            return Result<OrganizationResponse>.Failure("Failed to get organization for user");
+        }
+    }
 }

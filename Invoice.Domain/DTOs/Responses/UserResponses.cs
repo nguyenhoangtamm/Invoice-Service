@@ -53,3 +53,15 @@ public class DashboardStatsDto
     public int InactiveUsers { get; set; }
 }
 
+public class DashboardStatsResponse
+{
+    public string Id { get; set; } = string.Empty;
+    public int TotalInvoices { get; set; }
+    public decimal TotalRevenue { get; set; }
+    public int TotalCustomers { get; set; }
+    public decimal AvgInvoiceValue { get; set; }
+    public decimal MonthlyGrowth { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
+

@@ -27,6 +27,9 @@ public record InvoiceResponse : IMapFrom<Invoice.Domain.Entities.Invoice>
     public string? FormNumber { get; init; }
     public string? Serial { get; init; }
 
+    // Public lookup code
+    public string? LookupCode { get; init; }
+
     public int OrganizationId { get; init; }
     public int? IssuedByUserId { get; init; }
 

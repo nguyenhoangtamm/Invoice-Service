@@ -358,7 +358,7 @@ public class AuthService : IAuthService
             UserId = user.Id,
             TokenHash = tokenHash,
             ExpiresAt = DateTime.UtcNow.AddDays(7), // 7 days
-            DeviceInfo = deviceInfo,
+            DeviceInfo = deviceInfo?.Length > 100 ? deviceInfo.Substring(0, 100) : deviceInfo,
             IpAddress = ipAddress
         };
 

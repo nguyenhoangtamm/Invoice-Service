@@ -4,6 +4,7 @@ using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Invoice.API.Controllers;
 
@@ -82,6 +83,58 @@ public class OrganizationsController(ILogger<OrganizationsController> logger, IO
         {
             LogError($"Error getting organization with ID: {id}", ex);
             return StatusCode(500, Result<OrganizationResponse>.Failure("An error occurred while retrieving the organization"));
+        }
+    }
+
+    [HttpGet("get-by-user/{userId}")]
+    public async Task<ActionResult<Result<OrganizationResponse>>> GetByUserId(int userId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Getting organization for user ID: {userId}");
+
+            var result = await _organizationService.GetByUserId(userId, cancellationToken);
+
+            if (result.Succeeded)
+            {
+                return Ok(result);
+            }
+
+            return NotFound(result);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error getting organization for user ID: {userId}", ex);
+            return StatusCode(500, Result<OrganizationResponse>.Failure("An error occurred while retrieving the organization for user"));
+        }
+    }
+
+    [HttpGet("me")]
+    public async Task<ActionResult<Result<OrganizationResponse>>> GetMyOrganization(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            LogInformation("Getting organization for current user");
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(Result<OrganizationResponse>.Failure("User not authenticated"));
+            }
+
+            var result = await _organizationService.GetByUserId(userId, cancellationToken);
+
+            if (result.Succeeded)
+            {
+                return Ok(result);
+            }
+
+            return NotFound(result);
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting organization for current user", ex);
+            return StatusCode(500, Result<OrganizationResponse>.Failure("An error occurred while retrieving the organization for current user"));
         }
     }
 

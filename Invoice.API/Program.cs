@@ -12,7 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS ??n gi?n
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>

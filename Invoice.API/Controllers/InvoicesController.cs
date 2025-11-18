@@ -118,6 +118,22 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
         }
     }
 
+    [HttpGet("get-by-user")]
+    public async Task<ActionResult<PaginatedResult<InvoiceResponse>>> GetInvoicesByUserWithPagination([FromQuery] GetInvoiceByUserWithPagination request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            LogInformation($"Getting invoices by user {request.UserId} with pagination - Page: {request.PageNumber}, Size: {request.PageSize}");
+
+            return await _invoiceService.GetByUserWithPagination(request, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error getting invoices by user {request.UserId} with pagination", ex);
+            return StatusCode(500, Result<PaginatedResult<InvoiceResponse>>.Failure("An error occurred while retrieving invoices by user"));
+        }
+    }
+
     [HttpGet("verify-invoice/{invoiceId}")]
     public async Task<ActionResult<Result<VerifyInvoiceResponse>>> VerifyInvoice(int invoiceId, CancellationToken cancellationToken = default)
     {
@@ -131,6 +147,28 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
         {
             LogError($"Error verifying invoice with ID: {invoiceId}", ex);
             return StatusCode(500, Result<VerifyInvoiceResponse>.Failure("An error occurred while verifying the invoice"));
+        }
+    }
+
+    // Public lookup endpoint - no authentication required
+    [AllowAnonymous]
+    [HttpGet("lookup/{code}")]
+    public async Task<ActionResult<Result<InvoiceResponse>>> Lookup(string code, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            LogInformation($"Lookup invoice with code: {code}");
+
+            var result = await _invoiceService.LookupByCode(code, cancellationToken);
+            if (result.Succeeded)
+                return Ok(result);
+
+            return NotFound(result);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error looking up invoice with code: {code}", ex);
+            return StatusCode(500, Result<InvoiceResponse>.Failure("An error occurred while looking up the invoice"));
         }
     }
 }
