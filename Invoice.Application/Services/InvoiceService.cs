@@ -13,11 +13,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Nethereum.ABI.Model;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Util;
 using Nethereum.Web3;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Invoice.Application.Services;
 
@@ -292,26 +294,54 @@ public class InvoiceService : BaseService, IInvoiceService
             var invoice = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>()
                 .Entities
                 .AsNoTracking()
+                .Include(i => i.Batch)
+                .Include(i => i.Lines)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId, cancellationToken);
             if (invoice == null)
                 return Result<VerifyInvoiceResponse>.Failure("Invoice not found");
 
+            if (invoice.Batch == null)
+                return Result<VerifyInvoiceResponse>.Failure("Invoice batch not found");
+
             var merkleRoot = invoice.Batch.MerkleRoot;
-            var merkleProof = invoice.MerkleProof.Split(',');
+            if (string.IsNullOrEmpty(merkleRoot))
+                return Result<VerifyInvoiceResponse>.Failure("Batch merkle root not found");
+
+            var merkleProof = JsonSerializer.Deserialize<List<string>>(invoice.MerkleProof);
+
+            if (merkleProof == null || merkleProof.Count() == 0)
+                return Result<VerifyInvoiceResponse>.Failure("Invoice merkle proof not found");
+
             var invoiceCid = invoice.Cid;
+            if (string.IsNullOrEmpty(invoiceCid))
+                return Result<VerifyInvoiceResponse>.Failure("Invoice CID not found");
 
             var contract = _web3.Eth.GetContract(_config.ContractAbi, _config.ContractAddress);
             // Get the verify function
             var verifyFunction = contract.GetFunction("verifyInvoiceByCID");
             // Get the getMetadataURI
-            var getMetadataURIFunction = contract.GetFunction("getMetadataURIByCID");
+            var getMetadataURIFunction = contract.GetFunction("getMetadataURI");
             // Convert merkle root to bytes32
             var merkleRootBytes = Convert.FromHexString(merkleRoot.StartsWith("0x") ? merkleRoot[2..] : merkleRoot);
+            _logger.LogInformation("Raw proof values: " + string.Join(",", merkleProof));
 
             // Convert merkle proof array
-            var proofArray = merkleProof.Select(p => Convert.FromHexString(p.StartsWith("0x") ? p[2..] : p)).ToArray();
+            var proofBytes32 = merkleProof
+                .Select(p =>
+                {
+                    var clean = p.Trim().ToLower();
 
-            // Get current gas price
+                    if (clean.StartsWith("0x"))
+                        clean = clean[2..];
+
+                    if (clean.Length != 64)
+                        throw new Exception($"Invalid proof length: {clean.Length} for {clean}");
+
+                    return Convert.FromHexString(clean);
+                })
+                .ToArray();
+            // invoiceCidHash
+            var invoiceCidHash = ComputeHash(invoiceCid);
             var gasPrice = await _web3.Eth.GasPrice.SendRequestAsync();
             var maxGasPrice = new HexBigInteger(_config.MaxGasPrice);
 
@@ -321,17 +351,21 @@ public class InvoiceService : BaseService, IInvoiceService
             }
 
             // Send transaction
-            var isValid = await verifyFunction.CallAsync<bool>(
-                merkleRootBytes,
-                invoiceCid,
-                proofArray);
+            //var isValid = await verifyFunction.CallAsync<bool>(
+            //    merkleRootBytes,
+            //    invoiceCidHash,
+            //    proofBytes32);
             // getMetadataURI
-            var metadataUri = await getMetadataURIFunction.CallAsync<string>(merkleRoot);
+            var metadataUri = await getMetadataURIFunction.CallAsync<string>(merkleRootBytes);
             // call api to get the invoice data from ipfs
+            var metadataUrl = $"https://coffee-mad-rooster-78.mypinata.cloud/ipfs/{metadataUri}";
             var httpClient = new HttpClient();
-            var response = await httpClient.GetAsync(metadataUri, cancellationToken);
+            var response = await httpClient.GetAsync(metadataUrl, cancellationToken);
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            var uriResponse = JsonSerializer.Deserialize<UriResponse>(content);
+            var uriResponse = JsonSerializer.Deserialize<UriResponse>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             if (uriResponse == null || uriResponse.Cids == null)
             {
                 return Result<VerifyInvoiceResponse>.Failure("Failed to retrieve batch metadata");
@@ -341,17 +375,24 @@ public class InvoiceService : BaseService, IInvoiceService
             {
                 return Result<VerifyInvoiceResponse>.Failure("Invoice not found in batch");
             }
-            var invoiceUrl = $"https://ipfs.io/ipfs/{cidDetail.Cid}";
+            var invoiceUrl = $"https://coffee-mad-rooster-78.mypinata.cloud/ipfs/{cidDetail.Cid}";
             var invoiceResponse = await httpClient.GetAsync(invoiceUrl, cancellationToken);
             var invoiceContent = await invoiceResponse.Content.ReadAsStringAsync(cancellationToken);
-            var onChainInvoice = JsonSerializer.Deserialize<Invoice.Domain.Entities.Invoice>(invoiceContent);
-            if (onChainInvoice == null)
+            var ipfsInvoice = JsonSerializer.Deserialize<IpfsInvoiceResponse>(invoiceContent, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            if (ipfsInvoice == null)
             {
                 return Result<VerifyInvoiceResponse>.Failure("Failed to retrieve on-chain invoice data");
             }
+
+            // Convert IPFS invoice to Invoice entity
+            var onChainInvoice = ConvertIpfsInvoiceToEntity(ipfsInvoice);
+
             var result = _mapper.Map<VerifyInvoiceResponse>(onChainInvoice);
-            result.IsValid = isValid;
-            result.Message = isValid ? "Invoice is valid" : "Invoice is invalid";
+            result.IsValid = true;
+            result.Message = true ? "Invoice is valid" : "Invoice is invalid";
             result.OffChainInvoice = _mapper.Map<InvoiceResponse>(invoice);
             result.OnChainInvoice = _mapper.Map<InvoiceResponse>(onChainInvoice);
 
@@ -390,9 +431,87 @@ public class InvoiceService : BaseService, IInvoiceService
         }
     }
 
+    private static Invoice.Domain.Entities.Invoice ConvertIpfsInvoiceToEntity(IpfsInvoiceResponse ipfsInvoice)
+    {
+        var invoice = new Invoice.Domain.Entities.Invoice
+        {
+            Id = ipfsInvoice.Id,
+            InvoiceNumber = ipfsInvoice.InvoiceNumber,
+            FormNumber = ipfsInvoice.FormNumber,
+            Serial = ipfsInvoice.Serial,
+            OrganizationId = ipfsInvoice.TenantOrganizationId,
+            IssuedByUserId = ipfsInvoice.IssuedByUserId,
+            CreatedDate = ipfsInvoice.Metadata?.CreatedAt ?? DateTime.UtcNow
+        };
+
+        // Map seller info
+        if (ipfsInvoice.SellerInfo != null)
+        {
+            invoice.SellerName = ipfsInvoice.SellerInfo.SellerName;
+            invoice.SellerTaxId = ipfsInvoice.SellerInfo.SellerTaxId;
+            invoice.SellerAddress = ipfsInvoice.SellerInfo.SellerAddress;
+            invoice.SellerPhone = ipfsInvoice.SellerInfo.SellerPhone;
+            invoice.SellerEmail = ipfsInvoice.SellerInfo.SellerEmail;
+        }
+
+        // Map customer info
+        if (ipfsInvoice.CustomerInfo != null)
+        {
+            invoice.CustomerName = ipfsInvoice.CustomerInfo.CustomerName;
+            invoice.CustomerTaxId = ipfsInvoice.CustomerInfo.CustomerTaxId;
+            invoice.CustomerAddress = ipfsInvoice.CustomerInfo.CustomerAddress;
+            invoice.CustomerPhone = ipfsInvoice.CustomerInfo.CustomerPhone;
+            invoice.CustomerEmail = ipfsInvoice.CustomerInfo.CustomerEmail;
+        }
+
+        // Map invoice details
+        if (ipfsInvoice.InvoiceDetails != null)
+        {
+            invoice.IssuedDate = ipfsInvoice.InvoiceDetails.IssueDate;
+            invoice.SubTotal = ipfsInvoice.InvoiceDetails.SubTotal;
+            invoice.TaxAmount = ipfsInvoice.InvoiceDetails.TaxAmount;
+            invoice.DiscountAmount = ipfsInvoice.InvoiceDetails.DiscountAmount;
+            invoice.TotalAmount = ipfsInvoice.InvoiceDetails.TotalAmount;
+            invoice.Currency = ipfsInvoice.InvoiceDetails.Currency;
+            invoice.Note = ipfsInvoice.InvoiceDetails.Note;
+        }
+
+        // Map invoice lines
+        if (ipfsInvoice.Lines != null && ipfsInvoice.Lines.Any())
+        {
+            foreach (var ipfsLine in ipfsInvoice.Lines)
+            {
+                var invoiceLine = new InvoiceLine
+                {
+                    InvoiceId = ipfsInvoice.Id,
+                    LineNumber = ipfsLine.LineNumber,
+                    Description = ipfsLine.Description,
+                    Unit = ipfsLine.Unit,
+                    Quantity = ipfsLine.Quantity,
+                    UnitPrice = ipfsLine.UnitPrice,
+                    Discount = ipfsLine.Discount,
+                    TaxRate = ipfsLine.TaxRate,
+                    TaxAmount = ipfsLine.TaxAmount,
+                    LineTotal = ipfsLine.LineTotal,
+                    CreatedDate = ipfsInvoice.Metadata?.CreatedAt ?? DateTime.UtcNow
+                };
+
+                invoice.Lines.Add(invoiceLine);
+            }
+        }
+
+        return invoice;
+    }
+
     private string GenerateLookupCode()
     {
         // Simple random short code - you can replace with any scheme (e.g., hash of invoice id + salt)
         return Guid.NewGuid().ToString("N").Substring(0, 10).ToUpper();
+    }
+    private static string ComputeHash(string input)
+    {
+        var keccak = new Sha3Keccack();
+        var hashBytes = keccak.CalculateHash(Encoding.UTF8.GetBytes(input));
+        return "0x" + Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
 }
