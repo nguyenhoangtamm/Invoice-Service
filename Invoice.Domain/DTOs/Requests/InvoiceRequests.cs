@@ -11,9 +11,6 @@ public record CreateInvoiceRequest
     public string? FormNumber { get; init; }
     public string? Serial { get; init; }
 
-    // Public lookup code (optional when creating)
-    public string? LookupCode { get; init; }
-
     public int OrganizationId { get; init; }
     public int? IssuedByUserId { get; init; }
 
@@ -41,13 +38,7 @@ public record CreateInvoiceRequest
     public string? Currency { get; init; }
     public string? Note { get; init; }
 
-    public int? BatchId { get; init; }
-    public string? ImmutableHash { get; init; }
-    public string? Cid { get; init; }
-    public string? CidHash { get; init; }
-    public string? MerkleProof { get; init; }
-
-    public List<InvoiceLine> Lines { get; init; }
+    public List<CreateInvoiceLineRequest> Lines { get; init; }
 }
 
 public record UpdateInvoiceRequest

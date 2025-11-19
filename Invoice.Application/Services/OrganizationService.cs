@@ -187,4 +187,27 @@ public class OrganizationService : BaseService, IOrganizationService
             return Result<OrganizationResponse>.Failure("Failed to get organization for user");
         }
     }
+
+    // New method: get all organizations for a user
+    public async Task<Result<List<OrganizationResponse>>> GetOrganizationsByUserId(int userId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var organizations = await _unitOfWork.Repository<Organization>().Entities
+                .AsNoTracking()
+                .Where(o => o.UserId == userId && !o.IsDeleted)
+                .ToListAsync(cancellationToken);
+
+            if (!organizations.Any()) 
+                return Result<List<OrganizationResponse>>.Failure("No organizations found for user");
+
+            var response = _mapper.Map<List<OrganizationResponse>>(organizations);
+            return Result<List<OrganizationResponse>>.Success(response, "Organizations retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error getting organizations for user {userId}", ex);
+            return Result<List<OrganizationResponse>>.Failure("Failed to get organizations for user");
+        }
+    }
 }

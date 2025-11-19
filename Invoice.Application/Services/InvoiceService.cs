@@ -57,7 +57,7 @@ public class InvoiceService : BaseService, IInvoiceService
                 InvoiceNumber = request.InvoiceNumber,
                 FormNumber = request.FormNumber,
                 Serial = request.Serial,
-                LookupCode = string.IsNullOrWhiteSpace(request.LookupCode) ? GenerateLookupCode() : request.LookupCode,
+                LookupCode = GenerateLookupCode(),
                 OrganizationId = request.OrganizationId,
                 IssuedByUserId = request.IssuedByUserId,
                 SellerName = request.SellerName,
@@ -78,7 +78,6 @@ public class InvoiceService : BaseService, IInvoiceService
                 TotalAmount = request.TotalAmount,
                 Currency = request.Currency,
                 Note = request.Note,
-                BatchId = request.BatchId,
                 CreatedBy = UserName ?? "System",
                 CreatedDate = DateTime.UtcNow
             };

@@ -110,19 +110,19 @@ public class OrganizationsController(ILogger<OrganizationsController> logger, IO
     }
 
     [HttpGet("me")]
-    public async Task<ActionResult<Result<OrganizationResponse>>> GetMyOrganization(CancellationToken cancellationToken = default)
+    public async Task<ActionResult<Result<List<OrganizationResponse>>>> GetMyOrganization(CancellationToken cancellationToken = default)
     {
         try
         {
-            LogInformation("Getting organization for current user");
+            LogInformation("Getting organizations for current user");
 
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
             {
-                return Unauthorized(Result<OrganizationResponse>.Failure("User not authenticated"));
+                return Unauthorized(Result<List<OrganizationResponse>>.Failure("User not authenticated"));
             }
 
-            var result = await _organizationService.GetByUserId(userId, cancellationToken);
+            var result = await _organizationService.GetOrganizationsByUserId(userId, cancellationToken);
 
             if (result.Succeeded)
             {
@@ -133,8 +133,8 @@ public class OrganizationsController(ILogger<OrganizationsController> logger, IO
         }
         catch (Exception ex)
         {
-            LogError("Error getting organization for current user", ex);
-            return StatusCode(500, Result<OrganizationResponse>.Failure("An error occurred while retrieving the organization for current user"));
+            LogError("Error getting organizations for current user", ex);
+            return StatusCode(500, Result<List<OrganizationResponse>>.Failure("An error occurred while retrieving organizations for current user"));
         }
     }
 

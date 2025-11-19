@@ -7,8 +7,6 @@ public class CreateInvoiceRequestValidator : AbstractValidator<CreateInvoiceRequ
 {
     public CreateInvoiceRequestValidator()
     {
-        RuleFor(x => x.OrganizationId).GreaterThan(0);
-
         RuleFor(x => x.InvoiceNumber).MaximumLength(50);
         RuleFor(x => x.FormNumber).MaximumLength(50);
         RuleFor(x => x.Serial).MaximumLength(50);
