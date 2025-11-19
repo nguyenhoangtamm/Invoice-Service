@@ -1,13 +1,14 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Invoice.Application.Extensions;
+using Invoice.Application.Interfaces;
+using Invoice.Domain.Configurations;
 using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Entities;
 using Invoice.Domain.Interfaces;
 using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
-using Invoice.Domain.Configurations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -24,13 +25,15 @@ public class InvoiceService : BaseService, IInvoiceService
 {
     private readonly IWeb3 _web3;
     private readonly BlockchainConfiguration _config;
+    private readonly IUserRepository _userRepository;
 
     public InvoiceService(IHttpContextAccessor httpContextAccessor, ILogger<InvoiceService> logger,
-        IUnitOfWork unitOfWork, IMapper mapper, IWeb3 web3, BlockchainConfiguration config)
+        IUnitOfWork unitOfWork, IMapper mapper, IWeb3 web3, BlockchainConfiguration config, IUserRepository userRepository)
         : base(httpContextAccessor, logger, unitOfWork, mapper)
     {
         _web3 = web3;
         _config = config;
+        _userRepository = userRepository;
     }
 
     public async Task<Result<int>> Create(CreateInvoiceRequest request, CancellationToken cancellationToken)
@@ -51,7 +54,7 @@ public class InvoiceService : BaseService, IInvoiceService
                     }
                 }
             }
-
+            var currentUser = await _userRepository.GetByIdAsync(request.IssuedByUserId ?? 0);
             var entity = new Invoice.Domain.Entities.Invoice
             {
                 InvoiceNumber = request.InvoiceNumber,
@@ -78,7 +81,6 @@ public class InvoiceService : BaseService, IInvoiceService
                 TotalAmount = request.TotalAmount,
                 Currency = request.Currency,
                 Note = request.Note,
-                CreatedBy = UserName ?? "System",
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -101,7 +103,6 @@ public class InvoiceService : BaseService, IInvoiceService
                         TaxRate = ln.TaxRate ?? 0m,
                         TaxAmount = taxAmount,
                         LineTotal = lineTotal,
-                        CreatedBy = UserName ?? "System",
                         CreatedDate = DateTime.UtcNow
                     };
                     entity.Lines.Add(line);
@@ -145,7 +146,6 @@ public class InvoiceService : BaseService, IInvoiceService
             if (request.Note != null) entity.Note = request.Note;
             if (request.BatchId.HasValue) entity.BatchId = request.BatchId;
 
-            entity.UpdatedBy = UserName ?? "System";
             entity.UpdatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().UpdateAsync(entity);

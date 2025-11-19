@@ -36,7 +36,6 @@ public class RoleService : BaseService, IRoleService
             {
                 Name = request.Name,
                 Description = request.Description,
-                CreatedBy = UserName,
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -73,7 +72,6 @@ public class RoleService : BaseService, IRoleService
 
             role.Name = request.Name;
             role.Description = request.Description;
-            role.UpdatedBy = UserName;
             role.UpdatedDate = DateTime.UtcNow;
 
             var result = await _roleManager.UpdateAsync(role);
@@ -108,7 +106,6 @@ public class RoleService : BaseService, IRoleService
             }
 
             role.IsDeleted = true;
-            role.UpdatedBy = UserName;
             role.UpdatedDate = DateTime.UtcNow;
 
             var result = await _roleManager.UpdateAsync(role);

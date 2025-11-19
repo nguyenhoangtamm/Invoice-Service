@@ -8,7 +8,7 @@ public class InvoiceBatchConfiguration : IEntityTypeConfiguration<InvoiceBatch>
 {
     public void Configure(EntityTypeBuilder<InvoiceBatch> b)
     {
-        b.ToTable("Invoice_Batches");
+        b.ToTable("InvoiceBatches");
 
         b.HasKey(x => x.Id);
 

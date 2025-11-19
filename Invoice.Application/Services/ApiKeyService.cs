@@ -79,7 +79,6 @@ public class ApiKeyService : BaseService, IApiKeyService
                 Active = request.Active,
                 OrganizationId = request.OrganizationId,
                 ExpiresAt = expiresAt,
-                CreatedBy = UserName ?? "System",
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -121,7 +120,6 @@ public class ApiKeyService : BaseService, IApiKeyService
             if (request.RevokedAt.HasValue) apiKey.RevokedAt = request.RevokedAt.Value;
             if (request.OrganizationId.HasValue) apiKey.OrganizationId = request.OrganizationId.Value;
 
-            apiKey.UpdatedBy = UserName ?? "System";
             apiKey.UpdatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Repository<ApiKey>().UpdateAsync(apiKey);

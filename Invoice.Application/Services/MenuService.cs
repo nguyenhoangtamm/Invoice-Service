@@ -44,7 +44,6 @@ public class MenuService : BaseService, IMenuService
             }
 
             var menu = _mapper.Map<Menu>(request);
-            menu.CreatedBy = UserName ?? "System";
             menu.CreatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Repository<Menu>().AddAsync(menu);
@@ -93,7 +92,6 @@ public class MenuService : BaseService, IMenuService
             }
 
             _mapper.Map(request, menu);
-            menu.UpdatedBy = UserName ?? "System";
             menu.UpdatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Repository<Menu>().UpdateAsync(menu);
@@ -129,7 +127,6 @@ public class MenuService : BaseService, IMenuService
 
             // Soft delete
             menu.IsDeleted = true;
-            menu.UpdatedBy = UserName ?? "System";
             menu.UpdatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Repository<Menu>().UpdateAsync(menu);
@@ -330,7 +327,6 @@ public class MenuService : BaseService, IMenuService
             foreach (var roleMenu in existingRoleMenus)
             {
                 roleMenu.IsDeleted = true;
-                roleMenu.UpdatedBy = UserName ?? "System";
                 roleMenu.UpdatedDate = DateTime.UtcNow;
                 await _unitOfWork.Repository<RoleMenu>().UpdateAsync(roleMenu);
             }
@@ -344,7 +340,6 @@ public class MenuService : BaseService, IMenuService
                     {
                         RoleId = request.RoleId,
                         MenuId = menuId,
-                        CreatedBy = UserName ?? "System",
                         CreatedDate = DateTime.UtcNow
                     };
 

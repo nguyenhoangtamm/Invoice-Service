@@ -59,7 +59,6 @@ public class UserService : BaseService, IUserService
                 Status = UserStatus.Active,
                 EmailConfirmed = true,
                 CreatedDate = DateTime.UtcNow,
-                CreatedBy = UserName ?? "System"
             };
 
             // Create user with password
@@ -78,7 +77,6 @@ public class UserService : BaseService, IUserService
                 PhoneNumber = string.Empty, // Use empty string to avoid not-null constraint
                 AvatarUrl = string.Empty, // Use empty string to avoid not-null constraint
                 CreatedDate = DateTime.UtcNow,
-                CreatedBy = UserName ?? "System"
             };
 
             var profileRepo = _unitOfWork.Repository<ProfileEntity>();
@@ -142,7 +140,6 @@ public class UserService : BaseService, IUserService
                 user.Status = request.Status.Value;
 
             user.UpdatedDate = DateTime.UtcNow;
-            user.UpdatedBy = UserName ?? "System";
 
             // Update profile if FirstName, LastName, or Gender provided
             if (!string.IsNullOrEmpty(request.FirstName) || !string.IsNullOrEmpty(request.LastName) || request.Gender.HasValue)
@@ -169,7 +166,6 @@ public class UserService : BaseService, IUserService
                     }
 
                     profile.UpdatedDate = DateTime.UtcNow;
-                    profile.UpdatedBy = UserName ?? "System";
                 }
 
                 await _unitOfWork.Save(cancellationToken);

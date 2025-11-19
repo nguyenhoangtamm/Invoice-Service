@@ -1,10 +1,11 @@
+using Invoice.API.Attributes;
 using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Invoice.API.Attributes;
+using System.Security.Claims;
 
 namespace Invoice.API.Controllers;
 
@@ -19,6 +20,13 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
         try
         {
             LogInformation($"Creating invoice");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(Result<List<OrganizationResponse>>.Failure("User not authenticated"));
+            }
+            // Set the IssuedByUserId to the authenticated user's ID
+            request = request with { IssuedByUserId = userId };
 
             return await _invoiceService.Create(request, cancellationToken);
         }

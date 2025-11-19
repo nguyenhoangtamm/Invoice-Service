@@ -8,7 +8,7 @@ public class InvoiceLineConfiguration : IEntityTypeConfiguration<InvoiceLine>
 {
     public void Configure(EntityTypeBuilder<InvoiceLine> b)
     {
-        b.ToTable("Invoice_Lines");
+        b.ToTable("InvoiceLines");
 
         b.HasKey(x => x.Id);
 

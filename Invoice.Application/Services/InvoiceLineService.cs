@@ -43,7 +43,6 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
                 TaxRate = request.TaxRate ?? 0m,
                 TaxAmount = request.TaxAmount ?? 0m,
                 LineTotal = request.LineTotal,
-                CreatedBy = UserName ?? "System",
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -85,7 +84,6 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
             if (request.TaxAmount.HasValue) line.TaxAmount = request.TaxAmount.Value;
             if (request.LineTotal.HasValue) line.LineTotal = request.LineTotal.Value;
 
-            line.UpdatedBy = UserName ?? "System";
             line.UpdatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Repository<InvoiceLine>().UpdateAsync(line);

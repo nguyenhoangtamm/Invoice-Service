@@ -39,7 +39,6 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
                 TxHash = request.TxHash,
                 BlockNumber = request.BlockNumber,
                 ConfirmedAt = request.ConfirmedAt,
-                CreatedBy = UserName ?? "System",
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -60,7 +59,6 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
 
                     inv.BatchId = batch.Id;
                     inv.Status = InvoiceStatus.Batched;
-                    inv.UpdatedBy = UserName ?? "System";
                     inv.UpdatedDate = DateTime.UtcNow;
                     await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().UpdateAsync(inv);
                     assignedCount++;
@@ -77,7 +75,6 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
 
             // update batch count
             batch.Count = assignedCount;
-            batch.UpdatedBy = UserName ?? "System";
             batch.UpdatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Repository<InvoiceBatch>().UpdateAsync(batch);
@@ -110,7 +107,6 @@ public class InvoiceBatchService : BaseService, IInvoiceBatchService
             if (request.BlockNumber.HasValue) batch.BlockNumber = request.BlockNumber.Value;
             if (request.ConfirmedAt.HasValue) batch.ConfirmedAt = request.ConfirmedAt.Value;
 
-            batch.UpdatedBy = UserName ?? "System";
             batch.UpdatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Repository<InvoiceBatch>().UpdateAsync(batch);

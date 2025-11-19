@@ -13,7 +13,7 @@ namespace Invoice.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Invoice_Batches",
+                name: "InvoiceBatches",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -26,9 +26,9 @@ namespace Invoice.Infrastructure.Migrations
                     TxHash = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     BlockNumber = table.Column<long>(type: "bigint", nullable: true),
                     ConfirmedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -36,7 +36,7 @@ namespace Invoice.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Invoice_Batches", x => x.Id);
+                    table.PrimaryKey("PK_InvoiceBatches", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -50,9 +50,9 @@ namespace Invoice.Infrastructure.Migrations
                     Icon = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Order = table.Column<int>(type: "integer", nullable: false),
                     ParentId = table.Column<int>(type: "integer", nullable: true),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -76,9 +76,9 @@ namespace Invoice.Infrastructure.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", maxLength: 100, nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", maxLength: 100, nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -100,9 +100,9 @@ namespace Invoice.Infrastructure.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Content = table.Column<string>(type: "character varying(5000)", maxLength: 5000, nullable: true),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -142,9 +142,9 @@ namespace Invoice.Infrastructure.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     RoleId = table.Column<int>(type: "integer", nullable: false),
                     MenuId = table.Column<int>(type: "integer", nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -177,9 +177,9 @@ namespace Invoice.Infrastructure.Migrations
                     FullName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
                     Phone = table.Column<string>(type: "text", nullable: true),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", maxLength: 100, nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", maxLength: 100, nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -308,9 +308,9 @@ namespace Invoice.Infrastructure.Migrations
                     OrganizationEmail = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     OrganizationBankAccount = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     UserId = table.Column<int>(type: "integer", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -342,9 +342,9 @@ namespace Invoice.Infrastructure.Migrations
                     Bio = table.Column<string>(type: "text", nullable: false),
                     PhoneNumber = table.Column<string>(type: "text", nullable: false),
                     AvatarUrl = table.Column<string>(type: "text", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -412,7 +412,7 @@ namespace Invoice.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Api_Keys",
+                name: "ApiKeys",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -421,10 +421,11 @@ namespace Invoice.Infrastructure.Migrations
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     Active = table.Column<bool>(type: "boolean", nullable: false),
                     RevokedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     OrganizationId = table.Column<int>(type: "integer", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -432,9 +433,9 @@ namespace Invoice.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Api_Keys", x => x.Id);
+                    table.PrimaryKey("PK_ApiKeys", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Api_Keys_Organizations_OrganizationId",
+                        name: "FK_ApiKeys_Organizations_OrganizationId",
                         column: x => x.OrganizationId,
                         principalTable: "Organizations",
                         principalColumn: "Id",
@@ -450,6 +451,7 @@ namespace Invoice.Infrastructure.Migrations
                     InvoiceNumber = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     FormNumber = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     Serial = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    LookupCode = table.Column<string>(type: "text", nullable: true),
                     OrganizationId = table.Column<int>(type: "integer", nullable: false),
                     IssuedByUserId = table.Column<int>(type: "integer", nullable: true),
                     SellerName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
@@ -475,9 +477,9 @@ namespace Invoice.Infrastructure.Migrations
                     Cid = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     CidHash = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     MerkleProof = table.Column<string>(type: "text", nullable: true),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -487,9 +489,9 @@ namespace Invoice.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_Invoices", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Invoices_Invoice_Batches_BatchId",
+                        name: "FK_Invoices_InvoiceBatches_BatchId",
                         column: x => x.BatchId,
-                        principalTable: "Invoice_Batches",
+                        principalTable: "InvoiceBatches",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
@@ -507,7 +509,7 @@ namespace Invoice.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Invoice_Lines",
+                name: "InvoiceLines",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -522,9 +524,9 @@ namespace Invoice.Infrastructure.Migrations
                     TaxRate = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: true),
                     TaxAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     LineTotal = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedById = table.Column<int>(type: "integer", nullable: true),
@@ -532,9 +534,9 @@ namespace Invoice.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Invoice_Lines", x => x.Id);
+                    table.PrimaryKey("PK_InvoiceLines", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Invoice_Lines_Invoices_InvoiceId",
+                        name: "FK_InvoiceLines_Invoices_InvoiceId",
                         column: x => x.InvoiceId,
                         principalTable: "Invoices",
                         principalColumn: "Id",
@@ -542,8 +544,8 @@ namespace Invoice.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Api_Keys_OrganizationId",
-                table: "Api_Keys",
+                name: "IX_ApiKeys_OrganizationId",
+                table: "ApiKeys",
                 column: "OrganizationId");
 
             migrationBuilder.CreateIndex(
@@ -567,14 +569,14 @@ namespace Invoice.Infrastructure.Migrations
                 column: "RoleId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Invoice_Batches_BatchId",
-                table: "Invoice_Batches",
+                name: "IX_InvoiceBatches_BatchId",
+                table: "InvoiceBatches",
                 column: "BatchId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Invoice_Lines_InvoiceId_LineNumber",
-                table: "Invoice_Lines",
+                name: "IX_InvoiceLines_InvoiceId_LineNumber",
+                table: "InvoiceLines",
                 columns: new[] { "InvoiceId", "LineNumber" },
                 unique: true);
 
@@ -689,7 +691,7 @@ namespace Invoice.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Api_Keys");
+                name: "ApiKeys");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
@@ -707,7 +709,7 @@ namespace Invoice.Infrastructure.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "Invoice_Lines");
+                name: "InvoiceLines");
 
             migrationBuilder.DropTable(
                 name: "Profiles");
@@ -731,7 +733,7 @@ namespace Invoice.Infrastructure.Migrations
                 name: "Menus");
 
             migrationBuilder.DropTable(
-                name: "Invoice_Batches");
+                name: "InvoiceBatches");
 
             migrationBuilder.DropTable(
                 name: "Organizations");

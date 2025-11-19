@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Invoice.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251118024731_AddExpiresAtToApiKey")]
-    partial class AddExpiresAtToApiKey
+    [Migration("20251119082444_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -36,8 +36,8 @@ namespace Invoice.Infrastructure.Migrations
                     b.Property<bool>("Active")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -66,8 +66,8 @@ namespace Invoice.Infrastructure.Migrations
                     b.Property<DateTime?>("RevokedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -79,7 +79,7 @@ namespace Invoice.Infrastructure.Migrations
 
                     b.HasIndex("OrganizationId");
 
-                    b.ToTable("Api_Keys", (string)null);
+                    b.ToTable("ApiKeys", (string)null);
                 });
 
             modelBuilder.Entity("Invoice.Domain.Entities.Invoice", b =>
@@ -101,8 +101,8 @@ namespace Invoice.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -211,8 +211,8 @@ namespace Invoice.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -257,8 +257,8 @@ namespace Invoice.Infrastructure.Migrations
                     b.Property<int>("Count")
                         .HasColumnType("integer");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -280,8 +280,8 @@ namespace Invoice.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -294,7 +294,7 @@ namespace Invoice.Infrastructure.Migrations
                     b.HasIndex("BatchId")
                         .IsUnique();
 
-                    b.ToTable("Invoice_Batches", (string)null);
+                    b.ToTable("InvoiceBatches", (string)null);
                 });
 
             modelBuilder.Entity("Invoice.Domain.Entities.InvoiceLine", b =>
@@ -305,8 +305,8 @@ namespace Invoice.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -355,8 +355,8 @@ namespace Invoice.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -369,7 +369,7 @@ namespace Invoice.Infrastructure.Migrations
                     b.HasIndex("InvoiceId", "LineNumber")
                         .IsUnique();
 
-                    b.ToTable("Invoice_Lines", (string)null);
+                    b.ToTable("InvoiceLines", (string)null);
                 });
 
             modelBuilder.Entity("Invoice.Domain.Entities.Menu", b =>
@@ -380,9 +380,8 @@ namespace Invoice.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -416,9 +415,8 @@ namespace Invoice.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -441,8 +439,8 @@ namespace Invoice.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -478,8 +476,8 @@ namespace Invoice.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -520,8 +518,8 @@ namespace Invoice.Infrastructure.Migrations
                     b.Property<DateTime?>("BirthDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -548,8 +546,8 @@ namespace Invoice.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -630,9 +628,9 @@ namespace Invoice.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
-                    b.Property<string>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -660,9 +658,9 @@ namespace Invoice.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("UpdatedBy")
+                    b.Property<int?>("UpdatedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -687,9 +685,8 @@ namespace Invoice.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -708,9 +705,8 @@ namespace Invoice.Infrastructure.Migrations
                     b.Property<int>("RoleId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -740,9 +736,8 @@ namespace Invoice.Infrastructure.Migrations
                         .HasMaxLength(5000)
                         .HasColumnType("character varying(5000)");
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -760,9 +755,8 @@ namespace Invoice.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");
@@ -837,9 +831,9 @@ namespace Invoice.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
-                    b.Property<string>("CreatedBy")
+                    b.Property<int?>("CreatedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("CreatedById")
                         .HasColumnType("integer");
@@ -905,9 +899,9 @@ namespace Invoice.Infrastructure.Migrations
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("UpdatedBy")
+                    b.Property<int?>("UpdatedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("integer");

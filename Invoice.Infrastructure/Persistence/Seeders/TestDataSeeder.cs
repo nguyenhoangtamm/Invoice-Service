@@ -27,7 +27,6 @@ public static class TestDataSeeder
                 OrganizationAddress = "Headquarter",
                 // Set owner reference to existing admin user to satisfy FK
                 UserId = admin.Id,
-                CreatedBy = admin.UserName,
                 CreatedDate = DateTime.UtcNow
             };
             await context.Organizations.AddAsync(org);
@@ -44,7 +43,6 @@ public static class TestDataSeeder
                 KeyHash = Guid.NewGuid().ToString("N"),
                 Name = "DefaultApiKey",
                 Active = true,
-                CreatedBy = admin.UserName,
                 CreatedDate = DateTime.UtcNow
             };
             await context.ApiKeys.AddAsync(apiKey);
@@ -76,7 +74,6 @@ public static class TestDataSeeder
                 TotalAmount = 110m,
                 Currency = "VND",
                 Note = "Seeded invoice",
-                CreatedBy = admin.UserName,
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -88,7 +85,6 @@ public static class TestDataSeeder
                 UnitPrice = 30m,
                 LineTotal = 60m,
                 TaxAmount = 6m,
-                CreatedBy = admin.UserName,
                 CreatedDate = DateTime.UtcNow
             });
 
@@ -100,7 +96,6 @@ public static class TestDataSeeder
                 UnitPrice = 40m,
                 LineTotal = 40m,
                 TaxAmount = 4m,
-                CreatedBy = admin.UserName,
                 CreatedDate = DateTime.UtcNow
             });
 
@@ -124,7 +119,6 @@ public static class TestDataSeeder
                 Count = 1,
                 MerkleRoot = "root",
                 Status = BatchStatus.Initial,
-                CreatedBy = admin.UserName,
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -134,7 +128,6 @@ public static class TestDataSeeder
             // assign invoice to batch
             newInvoice.BatchId = batch.Id;
             newInvoice.Status = InvoiceStatus.Batched;
-            newInvoice.UpdatedBy = admin.UserName;
             newInvoice.UpdatedDate = DateTime.UtcNow;
 
             context.Invoices.Update(newInvoice);

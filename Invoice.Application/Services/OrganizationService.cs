@@ -36,7 +36,6 @@ public class OrganizationService : BaseService, IOrganizationService
                 OrganizationPhone = request.OrganizationPhone,
                 OrganizationEmail = request.OrganizationEmail,
                 OrganizationBankAccount = request.OrganizationBankAccount,
-                CreatedBy = UserName ?? "System",
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -69,7 +68,6 @@ public class OrganizationService : BaseService, IOrganizationService
             if (request.OrganizationEmail != null) org.OrganizationEmail = request.OrganizationEmail;
             if (request.OrganizationBankAccount != null) org.OrganizationBankAccount = request.OrganizationBankAccount;
 
-            org.UpdatedBy = UserName ?? "System";
             org.UpdatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Repository<Organization>().UpdateAsync(org);
@@ -198,7 +196,7 @@ public class OrganizationService : BaseService, IOrganizationService
                 .Where(o => o.UserId == userId && !o.IsDeleted)
                 .ToListAsync(cancellationToken);
 
-            if (!organizations.Any()) 
+            if (!organizations.Any())
                 return Result<List<OrganizationResponse>>.Failure("No organizations found for user");
 
             var response = _mapper.Map<List<OrganizationResponse>>(organizations);

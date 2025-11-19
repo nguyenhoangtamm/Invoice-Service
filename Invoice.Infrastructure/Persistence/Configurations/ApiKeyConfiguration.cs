@@ -8,7 +8,7 @@ public class ApiKeyConfiguration : IEntityTypeConfiguration<ApiKey>
 {
     public void Configure(EntityTypeBuilder<ApiKey> b)
     {
-        b.ToTable("Api_Keys");
+        b.ToTable("ApiKeys");
 
         b.HasKey(x => x.Id);
 
