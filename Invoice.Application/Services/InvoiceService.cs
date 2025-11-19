@@ -349,13 +349,11 @@ public class InvoiceService : BaseService, IInvoiceService
             {
                 return Result<VerifyInvoiceResponse>.Failure("Failed to retrieve on-chain invoice data");
             }
-            var result = new VerifyInvoiceResponse
-            {
-                IsValid = isValid,
-                Message = isValid ? "Invoice is valid" : "Invoice is invalid",
-                OffChainInvoice = invoice,
-                OnChainInvoice = onChainInvoice,
-            };
+            var result = _mapper.Map<VerifyInvoiceResponse>(onChainInvoice);
+            result.IsValid = isValid;
+            result.Message = isValid ? "Invoice is valid" : "Invoice is invalid";
+            result.OffChainInvoice = _mapper.Map<InvoiceResponse>(invoice);
+            result.OnChainInvoice = _mapper.Map<InvoiceResponse>(onChainInvoice);
 
             _logger.LogInformation("Invoice {InvoiceCid} verified successfully", invoiceCid);
             return Result<VerifyInvoiceResponse>.Success(result, "Invoice verified successfully");
