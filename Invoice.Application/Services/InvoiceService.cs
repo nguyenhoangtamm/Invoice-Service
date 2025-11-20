@@ -20,6 +20,7 @@ using Nethereum.Web3;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Invoice.Application.Services;
 
@@ -97,7 +98,7 @@ public class InvoiceService : BaseService, IInvoiceService
                     var line = new Invoice.Domain.Entities.InvoiceLine
                     {
                         LineNumber = ln.LineNumber,
-                        Description = ln.Description,
+                        Name = ln.Name,
                         Unit = ln.Unit,
                         Quantity = ln.Quantity,
                         UnitPrice = ln.UnitPrice,
@@ -407,29 +408,45 @@ public class InvoiceService : BaseService, IInvoiceService
     }
 
     // Public lookup implementation
-    public async Task<Result<InvoiceResponse>> LookupByCode(string lookupCode, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<InvoiceLookUpResponse>> LookupByCode(GetInvoiceLookUpWithPagination query, CancellationToken cancellationToken)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(lookupCode))
-                return Result<InvoiceResponse>.Failure("Lookup code is required");
+            LogInformation($"Getting invoices by user {query.Code} with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
 
-            var entity = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
+            var invoicesQuery = _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
                 .AsNoTracking()
-                .Include(i => i.Lines)
-                .FirstOrDefaultAsync(i => i.LookupCode == lookupCode, cancellationToken);
+                .AsQueryable();
 
-            if (entity == null) return Result<InvoiceResponse>.Failure("Invoice not found");
+            if (!string.IsNullOrWhiteSpace(query.Code))
+            {
+                var k = query.Code.Trim();
+                invoicesQuery = invoicesQuery.Where(i => EF.Functions.Like(i.LookupCode ?? string.Empty, $"%{k}%"));
+            }
 
-            var response = _mapper.Map<InvoiceResponse>(entity);
-            return Result<InvoiceResponse>.Success(response, "Invoice retrieved");
+            var page = await invoicesQuery
+                .OrderByDescending(x => x.IssuedDate)
+                .ProjectTo<InvoiceLookUpResponse>(_mapper.ConfigurationProvider)
+                .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken);
+
+            if (!string.IsNullOrWhiteSpace(query.Code))
+            {
+                var trimmed = query.Code.Trim();
+                foreach (var item in page.Data)
+                {
+                    item.IsExactMatch = string.Equals(item.LookupCode?.Trim(), trimmed, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            return page;
         }
         catch (Exception ex)
         {
-            LogError("Error looking up invoice", ex);
-            return Result<InvoiceResponse>.Failure("Failed to lookup invoice");
+            LogError($"Error getting invoices by user {query.Code} with pagination", ex);
+            throw new Exception("An error occurred while retrieving invoices by user with pagination");
         }
     }
+
 
     private static Invoice.Domain.Entities.Invoice ConvertIpfsInvoiceToEntity(IpfsInvoiceResponse ipfsInvoice)
     {
@@ -485,7 +502,7 @@ public class InvoiceService : BaseService, IInvoiceService
                 {
                     InvoiceId = ipfsInvoice.Id,
                     LineNumber = ipfsLine.LineNumber,
-                    Description = ipfsLine.Description,
+                    Name = ipfsLine.Name,
                     Unit = ipfsLine.Unit,
                     Quantity = ipfsLine.Quantity,
                     UnitPrice = ipfsLine.UnitPrice,

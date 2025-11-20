@@ -97,6 +97,13 @@ public record GetInvoiceWithPagination
     public string? Keyword { get; set; }
     public int? OrganizationId { get; set; }
 }
+public record GetInvoiceLookUpWithPagination
+{
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public string? Keyword { get; set; }
+    public string Code { get; set; }
+}
 
 public record GetInvoiceByUserWithPagination
 {

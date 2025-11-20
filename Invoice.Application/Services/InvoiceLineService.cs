@@ -35,7 +35,7 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
             {
                 InvoiceId = request.InvoiceId,
                 LineNumber = request.LineNumber,
-                Description = request.Description,
+                Name = request.Name,
                 Unit = request.Unit,
                 Quantity = request.Quantity,
                 UnitPrice = request.UnitPrice,
@@ -75,7 +75,7 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
             }
 
             if (request.LineNumber.HasValue) line.LineNumber = request.LineNumber.Value;
-            if (request.Description != null) line.Description = request.Description;
+            if (request.Name != null) line.Name = request.Name;
             if (request.Unit != null) line.Unit = request.Unit;
             if (request.Quantity.HasValue) line.Quantity = request.Quantity.Value;
             if (request.UnitPrice.HasValue) line.UnitPrice = request.UnitPrice.Value;
@@ -177,7 +177,7 @@ public class InvoiceLineService : BaseService, IInvoiceLineService
             var invoiceLinesQuery = _unitOfWork.Repository<InvoiceLine>().Entities.AsQueryable();
             if (!string.IsNullOrWhiteSpace(query.Keyword))
             {
-                invoiceLinesQuery = invoiceLinesQuery.Where(l => l.Description.Contains(query.Keyword));
+                invoiceLinesQuery = invoiceLinesQuery.Where(l => l.Name.Contains(query.Keyword));
             }
             return await invoiceLinesQuery.OrderBy(x => x.CreatedDate)
                 .ProjectTo<InvoiceLineResponse>(_mapper.ConfigurationProvider)

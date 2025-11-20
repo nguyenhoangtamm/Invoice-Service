@@ -80,7 +80,7 @@ public static class TestDataSeeder
             invoice.Lines.Add(new InvoiceLine
             {
                 LineNumber = 1,
-                Description = "Product A",
+                Name = "Product A",
                 Quantity = 2m,
                 UnitPrice = 30m,
                 LineTotal = 60m,
@@ -91,7 +91,7 @@ public static class TestDataSeeder
             invoice.Lines.Add(new InvoiceLine
             {
                 LineNumber = 2,
-                Description = "Product B",
+                Name = "Product B",
                 Quantity = 1m,
                 UnitPrice = 40m,
                 LineTotal = 40m,

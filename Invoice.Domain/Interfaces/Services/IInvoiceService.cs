@@ -14,5 +14,5 @@ public interface IInvoiceService
     Task<Result<int>> Update(int id, UpdateInvoiceRequest request, CancellationToken cancellationToken);
     Task<Result<int>> Delete(int id, CancellationToken cancellationToken);
     Task<Result<VerifyInvoiceResponse>> VerifyInvoiceAsync(int invoiceId, CancellationToken cancellationToken);
-    Task<Result<InvoiceResponse>> LookupByCode(string lookupCode, CancellationToken cancellationToken);
+    Task<PaginatedResult<InvoiceLookUpResponse>> LookupByCode(GetInvoiceLookUpWithPagination query, CancellationToken cancellationToken);
 }

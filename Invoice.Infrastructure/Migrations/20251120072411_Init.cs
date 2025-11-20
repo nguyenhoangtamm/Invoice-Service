@@ -516,7 +516,7 @@ namespace Invoice.Infrastructure.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     InvoiceId = table.Column<int>(type: "integer", nullable: false),
                     LineNumber = table.Column<int>(type: "integer", nullable: false),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    Name = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Unit = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     Quantity = table.Column<decimal>(type: "numeric(18,3)", precision: 18, scale: 3, nullable: false),
                     UnitPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),

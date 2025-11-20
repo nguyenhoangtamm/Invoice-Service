@@ -4,7 +4,7 @@ public record CreateInvoiceLineRequest
 {
     public int InvoiceId { get; init; }
     public int LineNumber { get; init; }
-    public string? Description { get; init; }
+    public string? Name { get; init; }
     public string? Unit { get; init; }
     public decimal Quantity { get; init; }
     public decimal UnitPrice { get; init; }
@@ -19,7 +19,7 @@ public record UpdateInvoiceLineRequest
     public int Id { get; init; }
     public int? InvoiceId { get; init; }
     public int? LineNumber { get; init; }
-    public string? Description { get; init; }
+    public string? Name { get; init; }
     public string? Unit { get; init; }
     public decimal? Quantity { get; init; }
     public decimal? UnitPrice { get; init; }

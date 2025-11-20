@@ -8,7 +8,7 @@ public class InvoiceLine : BaseAuditableEntity
     public Invoice Invoice { get; set; } = default!;
 
     public int LineNumber { get; set; }
-    public string? Description { get; set; }
+    public string? Name { get; set; }
     public string? Unit { get; set; }
 
     public decimal Quantity { get; set; }

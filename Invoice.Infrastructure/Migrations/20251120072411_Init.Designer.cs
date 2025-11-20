@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Invoice.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251119082444_Init")]
+    [Migration("20251120072411_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -314,10 +314,6 @@ namespace Invoice.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
                     b.Property<decimal?>("Discount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -334,6 +330,10 @@ namespace Invoice.Infrastructure.Migrations
                     b.Property<decimal>("LineTotal")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<decimal>("Quantity")
                         .HasPrecision(18, 3)

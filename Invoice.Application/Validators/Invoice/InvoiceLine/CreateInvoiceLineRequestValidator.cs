@@ -9,7 +9,7 @@ public class CreateInvoiceLineRequestValidator : AbstractValidator<CreateInvoice
     {
         RuleFor(x => x.InvoiceId).GreaterThan(0);
         RuleFor(x => x.LineNumber).GreaterThan(0);
-        RuleFor(x => x.Description).MaximumLength(1000);
+        RuleFor(x => x.Name).MaximumLength(1000);
         RuleFor(x => x.Unit).MaximumLength(50);
         RuleFor(x => x.Quantity).GreaterThan(0);
         RuleFor(x => x.UnitPrice).GreaterThanOrEqualTo(0);

@@ -164,6 +164,15 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
     {
         try
         {
+            if (request.UserId == 0)
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                {
+                    return Unauthorized(Result<PaginatedResult<InvoiceResponse>>.Failure("User not authenticated"));
+                }
+                request = request with { UserId = userId };
+            }
             LogInformation($"Getting invoices by user {request.UserId} with pagination - Page: {request.PageNumber}, Size: {request.PageSize}");
 
             return await _invoiceService.GetByUserWithPagination(request, cancellationToken);
@@ -174,7 +183,7 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
             return StatusCode(500, Result<PaginatedResult<InvoiceResponse>>.Failure("An error occurred while retrieving invoices by user"));
         }
     }
-
+    [AllowAnonymous]
     [HttpGet("verify-invoice/{invoiceId}")]
     public async Task<ActionResult<Result<VerifyInvoiceResponse>>> VerifyInvoice(int invoiceId, CancellationToken cancellationToken = default)
     {
@@ -193,14 +202,14 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
 
     // Public lookup endpoint - no authentication required
     [AllowAnonymous]
-    [HttpGet("lookup/{code}")]
-    public async Task<ActionResult<Result<InvoiceResponse>>> Lookup(string code, CancellationToken cancellationToken = default)
+    [HttpGet("lookup")]
+    public async Task<ActionResult<PaginatedResult<InvoiceLookUpResponse>>> Lookup([FromQuery] GetInvoiceLookUpWithPagination request, CancellationToken cancellationToken = default)
     {
         try
         {
-            LogInformation($"Lookup invoice with code: {code}");
+            LogInformation($"Lookup invoice with code: {request.Code}");
 
-            var result = await _invoiceService.LookupByCode(code, cancellationToken);
+            var result = await _invoiceService.LookupByCode(request, cancellationToken);
             if (result.Succeeded)
                 return Ok(result);
 
@@ -208,7 +217,7 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
         }
         catch (Exception ex)
         {
-            LogError($"Error looking up invoice with code: {code}", ex);
+            LogError($"Error looking up invoice with code: {request.Code}", ex);
             return StatusCode(500, Result<InvoiceResponse>.Failure("An error occurred while looking up the invoice"));
         }
     }

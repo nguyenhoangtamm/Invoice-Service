@@ -2,6 +2,7 @@
 {
     public enum InvoiceStatus
     {
+        Draft = 0,              // Bản nháp
         Uploaded = 1,           // Đã upload
         IpfsStored = 2,         // Đã lưu trên IPFS
         Batched = 3,            // Đã tạo batch

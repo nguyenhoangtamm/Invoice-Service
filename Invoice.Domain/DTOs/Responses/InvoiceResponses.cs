@@ -8,197 +8,244 @@ namespace Invoice.Domain.DTOs.Responses;
 
 public record InvoiceLineResponse : IMapFrom<Invoice.Domain.Entities.InvoiceLine>
 {
-    public int Id { get; init; }
-    public int InvoiceId { get; init; }
-    public int LineNumber { get; init; }
-    public string? Description { get; init; }
-    public decimal Quantity { get; init; }
-    public string? Unit { get; init; }
-    public decimal UnitPrice { get; init; }
-    public decimal Discount { get; init; }
-    public decimal TaxRate { get; init; }
-    public decimal TaxAmount { get; init; }
-    public decimal LineTotal { get; init; }
+    public int Id { get; set; }
+    public int InvoiceId { get; set; }
+    public int LineNumber { get; set; }
+    public string? Name { get; set; }
+    public decimal Quantity { get; set; }
+    public string? Unit { get; set; }
+    public decimal UnitPrice { get; set; }
+    public decimal Discount { get; set; }
+    public decimal TaxRate { get; set; }
+    public decimal TaxAmount { get; set; }
+    public decimal LineTotal { get; set; }
 }
 
 public record InvoiceResponse : IMapFrom<Invoice.Domain.Entities.Invoice>
 {
-    public int Id { get; init; }
-    public string? InvoiceNumber { get; init; }
-    public string? FormNumber { get; init; }
-    public string? Serial { get; init; }
+    public int Id { get; set; }
+    public string? InvoiceNumber { get; set; }
+    public string? FormNumber { get; set; }
+    public string? Serial { get; set; }
 
     // Public lookup code
-    public string? LookupCode { get; init; }
+    public string? LookupCode { get; set; }
 
-    public int OrganizationId { get; init; }
-    public int? IssuedByUserId { get; init; }
+    public int OrganizationId { get; set; }
+    public int? IssuedByUserId { get; set; }
 
     // Seller
-    public string? SellerName { get; init; }
-    public string? SellerTaxId { get; init; }
-    public string? SellerAddress { get; init; }
-    public string? SellerPhone { get; init; }
-    public string? SellerEmail { get; init; }
+    public string? SellerName { get; set; }
+    public string? SellerTaxId { get; set; }
+    public string? SellerAddress { get; set; }
+    public string? SellerPhone { get; set; }
+    public string? SellerEmail { get; set; }
 
     // Customer
-    public string? CustomerName { get; init; }
-    public string? CustomerTaxId { get; init; }
-    public string? CustomerAddress { get; init; }
-    public string? CustomerPhone { get; init; }
-    public string? CustomerEmail { get; init; }
+    public string? CustomerName { get; set; }
+    public string? CustomerTaxId { get; set; }
+    public string? CustomerAddress { get; set; }
+    public string? CustomerPhone { get; set; }
+    public string? CustomerEmail { get; set; }
 
-    public InvoiceStatus Status { get; init; }
-    public DateTime? IssuedDate { get; init; }
+    public InvoiceStatus Status { get; set; }
+    public DateTime? IssuedDate { get; set; }
 
-    public decimal? SubTotal { get; init; }
-    public decimal? TaxAmount { get; init; }
-    public decimal? DiscountAmount { get; init; }
-    public decimal? TotalAmount { get; init; }
-    public string? Currency { get; init; }
-    public string? Note { get; init; }
+    public decimal? SubTotal { get; set; }
+    public decimal? TaxAmount { get; set; }
+    public decimal? DiscountAmount { get; set; }
+    public decimal? TotalAmount { get; set; }
+    public string? Currency { get; set; }
+    public string? Note { get; set; }
 
-    public int? BatchId { get; init; }
-    public string? ImmutableHash { get; init; }
-    public string? Cid { get; init; }
-    public string? CidHash { get; init; }
-    public string? MerkleProof { get; init; }
+    public int? BatchId { get; set; }
+    public string? ImmutableHash { get; set; }
+    public string? Cid { get; set; }
+    public string? CidHash { get; set; }
+    public string? MerkleProof { get; set; }
 
-    public List<InvoiceLineResponse> Lines { get; init; } = new List<InvoiceLineResponse>();
+    public List<InvoiceLineResponse> Lines { get; set; } = new List<InvoiceLineResponse>();
 }
 
 // IPFS Response Models
 public record IpfsSellerInfoResponse
 {
     [JsonPropertyName("sellerName")]
-    public string? SellerName { get; init; }
+    public string? SellerName { get; set; }
 
     [JsonPropertyName("sellerTaxId")]
-    public string? SellerTaxId { get; init; }
+    public string? SellerTaxId { get; set; }
 
     [JsonPropertyName("sellerAddress")]
-    public string? SellerAddress { get; init; }
+    public string? SellerAddress { get; set; }
 
     [JsonPropertyName("sellerPhone")]
-    public string? SellerPhone { get; init; }
+    public string? SellerPhone { get; set; }
 
     [JsonPropertyName("sellerEmail")]
-    public string? SellerEmail { get; init; }
+    public string? SellerEmail { get; set; }
 }
 
 public record IpfsCustomerInfoResponse
 {
     [JsonPropertyName("customerName")]
-    public string? CustomerName { get; init; }
+    public string? CustomerName { get; set; }
 
     [JsonPropertyName("customerTaxId")]
-    public string? CustomerTaxId { get; init; }
+    public string? CustomerTaxId { get; set; }
 
     [JsonPropertyName("customerAddress")]
-    public string? CustomerAddress { get; init; }
+    public string? CustomerAddress { get; set; }
 
     [JsonPropertyName("customerPhone")]
-    public string? CustomerPhone { get; init; }
+    public string? CustomerPhone { get; set; }
 
     [JsonPropertyName("customerEmail")]
-    public string? CustomerEmail { get; init; }
+    public string? CustomerEmail { get; set; }
 }
 
 public record IpfsInvoiceDetailsResponse
 {
     [JsonPropertyName("issueDate")]
-    public DateTime IssueDate { get; init; }
+    public DateTime IssueDate { get; set; }
 
     [JsonPropertyName("subTotal")]
-    public decimal SubTotal { get; init; }
+    public decimal SubTotal { get; set; }
 
     [JsonPropertyName("taxAmount")]
-    public decimal TaxAmount { get; init; }
+    public decimal TaxAmount { get; set; }
 
     [JsonPropertyName("discountAmount")]
-    public decimal DiscountAmount { get; init; }
+    public decimal DiscountAmount { get; set; }
 
     [JsonPropertyName("totalAmount")]
-    public decimal TotalAmount { get; init; }
+    public decimal TotalAmount { get; set; }
 
     [JsonPropertyName("currency")]
-    public string? Currency { get; init; }
+    public string? Currency { get; set; }
 
     [JsonPropertyName("note")]
-    public string? Note { get; init; }
+    public string? Note { get; set; }
 }
 
 public record IpfsInvoiceLineResponse
 {
     [JsonPropertyName("lineNumber")]
-    public int LineNumber { get; init; }
+    public int LineNumber { get; set; }
 
-    [JsonPropertyName("description")]
-    public string? Description { get; init; }
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
 
     [JsonPropertyName("unit")]
-    public string? Unit { get; init; }
+    public string? Unit { get; set; }
 
     [JsonPropertyName("quantity")]
-    public decimal Quantity { get; init; }
+    public decimal Quantity { get; set; }
 
     [JsonPropertyName("unitPrice")]
-    public decimal UnitPrice { get; init; }
+    public decimal UnitPrice { get; set; }
 
     [JsonPropertyName("discount")]
-    public decimal Discount { get; init; }
+    public decimal Discount { get; set; }
 
     [JsonPropertyName("taxRate")]
-    public decimal TaxRate { get; init; }
+    public decimal TaxRate { get; set; }
 
     [JsonPropertyName("taxAmount")]
-    public decimal TaxAmount { get; init; }
+    public decimal TaxAmount { get; set; }
 
     [JsonPropertyName("lineTotal")]
-    public decimal LineTotal { get; init; }
+    public decimal LineTotal { get; set; }
 }
 
 public record IpfsMetadataResponse
 {
     [JsonPropertyName("createdAt")]
-    public DateTime CreatedAt { get; init; }
+    public DateTime CreatedAt { get; set; }
 
     [JsonPropertyName("version")]
-    public string? Version { get; init; }
+    public string? Version { get; set; }
 }
 
 public record IpfsInvoiceResponse
 {
     [JsonPropertyName("id")]
-    public int Id { get; init; }
+    public int Id { get; set; }
 
     [JsonPropertyName("invoiceNumber")]
-    public string? InvoiceNumber { get; init; }
+    public string? InvoiceNumber { get; set; }
 
     [JsonPropertyName("formNumber")]
-    public string? FormNumber { get; init; }
+    public string? FormNumber { get; set; }
 
     [JsonPropertyName("serial")]
-    public string? Serial { get; init; }
+    public string? Serial { get; set; }
 
     [JsonPropertyName("tenantOrganizationId")]
-    public int TenantOrganizationId { get; init; }
+    public int TenantOrganizationId { get; set; }
 
     [JsonPropertyName("issuedByUserId")]
-    public int? IssuedByUserId { get; init; }
+    public int? IssuedByUserId { get; set; }
 
     [JsonPropertyName("sellerInfo")]
-    public IpfsSellerInfoResponse? SellerInfo { get; init; }
+    public IpfsSellerInfoResponse? SellerInfo { get; set; }
 
     [JsonPropertyName("customerInfo")]
-    public IpfsCustomerInfoResponse? CustomerInfo { get; init; }
+    public IpfsCustomerInfoResponse? CustomerInfo { get; set; }
 
     [JsonPropertyName("invoiceDetails")]
-    public IpfsInvoiceDetailsResponse? InvoiceDetails { get; init; }
+    public IpfsInvoiceDetailsResponse? InvoiceDetails { get; set; }
 
     [JsonPropertyName("lines")]
-    public List<IpfsInvoiceLineResponse>? Lines { get; init; }
+    public List<IpfsInvoiceLineResponse>? Lines { get; set; }
 
     [JsonPropertyName("metadata")]
-    public IpfsMetadataResponse? Metadata { get; init; }
+    public IpfsMetadataResponse? Metadata { get; set; }
+}
+
+public record InvoiceLookUpResponse : IMapFrom<Invoice.Domain.Entities.Invoice>
+{
+    public int Id { get; set; }
+    public string? InvoiceNumber { get; set; }
+    public string? FormNumber { get; set; }
+    public string? Serial { get; set; }
+
+    // Public lookup code
+    public string? LookupCode { get; set; }
+
+    public int OrganizationId { get; set; }
+    public int? IssuedByUserId { get; set; }
+
+    // Seller
+    public string? SellerName { get; set; }
+    public string? SellerTaxId { get; set; }
+    public string? SellerAddress { get; set; }
+    public string? SellerPhone { get; set; }
+    public string? SellerEmail { get; set; }
+
+    // Customer
+    public string? CustomerName { get; set; }
+    public string? CustomerTaxId { get; set; }
+    public string? CustomerAddress { get; set; }
+    public string? CustomerPhone { get; set; }
+    public string? CustomerEmail { get; set; }
+
+    public InvoiceStatus Status { get; set; }
+    public DateTime? IssuedDate { get; set; }
+
+    public decimal? SubTotal { get; set; }
+    public decimal? TaxAmount { get; set; }
+    public decimal? DiscountAmount { get; set; }
+    public decimal? TotalAmount { get; set; }
+    public string? Currency { get; set; }
+    public string? Note { get; set; }
+
+    public int? BatchId { get; set; }
+    public string? ImmutableHash { get; set; }
+    public string? Cid { get; set; }
+    public string? CidHash { get; set; }
+    public string? MerkleProof { get; set; }
+
+    public bool IsExactMatch { get; set; }
+    public List<InvoiceLineResponse> Lines { get; set; } = new List<InvoiceLineResponse>();
 }

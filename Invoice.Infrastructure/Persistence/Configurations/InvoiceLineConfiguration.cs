@@ -12,7 +12,7 @@ public class InvoiceLineConfiguration : IEntityTypeConfiguration<InvoiceLine>
 
         b.HasKey(x => x.Id);
 
-        b.Property(x => x.Description).HasMaxLength(1000);
+        b.Property(x => x.Name).HasMaxLength(1000);
         b.Property(x => x.Unit).HasMaxLength(50);
 
         b.Property(x => x.Quantity).HasPrecision(18, 3);
