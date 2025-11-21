@@ -466,8 +466,9 @@ public class InvoiceService : BaseService, IInvoiceService
             Id = ipfsInvoice.Id,
             InvoiceNumber = ipfsInvoice.InvoiceNumber,
             FormNumber = ipfsInvoice.FormNumber,
+            LookupCode = ipfsInvoice.LookupCode,
             Serial = ipfsInvoice.Serial,
-            OrganizationId = ipfsInvoice.TenantOrganizationId,
+            OrganizationId = ipfsInvoice.OrganizationId,
             IssuedByUserId = ipfsInvoice.IssuedByUserId,
             CreatedDate = ipfsInvoice.Metadata?.CreatedAt ?? DateTime.UtcNow
         };
