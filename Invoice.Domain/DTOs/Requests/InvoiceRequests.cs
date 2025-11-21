@@ -96,6 +96,7 @@ public record GetInvoiceWithPagination
     public int PageSize { get; set; } = 10;
     public string? Keyword { get; set; }
     public int? OrganizationId { get; set; }
+    public InvoiceStatus? Status { get; set; }
 }
 public record GetInvoiceLookUpWithPagination
 {
@@ -103,6 +104,8 @@ public record GetInvoiceLookUpWithPagination
     public int PageSize { get; set; } = 10;
     public string? Keyword { get; set; }
     public string Code { get; set; }
+    public InvoiceStatus? Status { get; set; }
+
 }
 
 public record GetInvoiceByUserWithPagination
@@ -112,6 +115,7 @@ public record GetInvoiceByUserWithPagination
     public string? Keyword { get; set; }
     public int UserId { get; set; }
     public int? OrganizationId { get; set; }
+    public InvoiceStatus? Status { get; set; }
 }
 
 // --- Merged action requests ---
