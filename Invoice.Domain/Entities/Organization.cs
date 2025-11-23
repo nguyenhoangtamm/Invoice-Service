@@ -13,7 +13,7 @@ public class Organization : BaseAuditableEntity
 
     // Owner (User)
     public int UserId { get; set; }
-    public User User { get; set; } = default!;
+    public User? User { get; set; } = default!;
 
     // Navigation
     public ICollection<ApiKey> ApiKeys { get; set; } = new List<ApiKey>();

@@ -27,7 +27,7 @@ public class OrganizationService : BaseService, IOrganizationService
         try
         {
             LogInformation($"Creating organization: {request.OrganizationName}");
-
+            var userId = GetCurrentUserId();
             var org = new Organization
             {
                 OrganizationName = request.OrganizationName,
@@ -38,6 +38,13 @@ public class OrganizationService : BaseService, IOrganizationService
                 OrganizationBankAccount = request.OrganizationBankAccount,
                 CreatedDate = DateTime.UtcNow
             };
+
+            // Only assign UserId if the current user is not an Admin
+            var isAdmin = Roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+            if (!isAdmin)
+            {
+                org.UserId = userId;
+            }
 
             await _unitOfWork.Repository<Organization>().AddAsync(org);
             await _unitOfWork.Save(cancellationToken);
