@@ -27,6 +27,7 @@ public class ApplicationDbContext : IdentityDbContext<DomainEntities.User, Domai
     public DbSet<DomainEntities.InvoiceLine> InvoiceLines { get; set; }
     public DbSet<DomainEntities.Organization> Organizations { get; set; }
     public DbSet<DomainEntities.ApiKey> ApiKeys { get; set; }
+    public DbSet<DomainEntities.InvoiceAttachment> InvoiceAttachments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

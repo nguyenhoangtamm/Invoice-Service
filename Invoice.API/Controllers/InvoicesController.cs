@@ -15,7 +15,8 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
     private readonly IInvoiceService _invoiceService = invoiceService;
 
     [HttpPost("create")]
-    public async Task<ActionResult<Result<int>>> Create([FromBody] CreateInvoiceRequest request, CancellationToken cancellationToken)
+    [DisableRequestSizeLimit]
+    public async Task<ActionResult<Result<int>>> Create([FromForm] CreateInvoiceRequest request, [FromForm] List<IFormFile>? files, CancellationToken cancellationToken)
     {
         try
         {
@@ -27,6 +28,43 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
             }
             // Set the IssuedByUserId to the authenticated user's ID
             request = request with { IssuedByUserId = userId };
+
+            // Handle file uploads
+            if (files != null && files.Any())
+            {
+                const long maxFileSize = 10 * 1024 * 1024; // 10 MB
+                var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "invoices");
+                if (!Directory.Exists(uploadsRoot)) Directory.CreateDirectory(uploadsRoot);
+
+                foreach (var file in files)
+                {
+                    if (file.Length > maxFileSize)
+                    {
+                        return BadRequest(Result<int>.Failure($"File {file.FileName} exceeds maximum allowed size of {maxFileSize} bytes"));
+                    }
+
+                    var sanitizedFileName = Path.GetRandomFileName() + Path.GetExtension(file.FileName);
+                    var filePath = Path.Combine(uploadsRoot, sanitizedFileName);
+
+                    using (var stream = System.IO.File.Create(filePath))
+                    {
+                        await file.CopyToAsync(stream, cancellationToken);
+                    }
+
+                    // Add attachment metadata to request (so service can persist attachment records)
+                    var relativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), filePath).Replace('\\', '/');
+                    var att = new CreateInvoiceAttachmentRequest
+                    {
+                        FileName = file.FileName,
+                        ContentType = file.ContentType,
+                        Size = file.Length,
+                        Path = relativePath
+                    };
+
+                    if (request.Attachments == null) request = request with { Attachments = new List<CreateInvoiceAttachmentRequest> { att } };
+                    else { var list = request.Attachments.ToList(); list.Add(att); request = request with { Attachments = list }; }
+                }
+            }
 
             return await _invoiceService.Create(request, cancellationToken);
         }
@@ -41,7 +79,8 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
     [HttpPost("upload")]
     [ApiKeyAuth]
     [AllowAnonymous] // Override the controller's Authorize attribute since we're using API key auth
-    public async Task<ActionResult<Result<int>>> UploadInvoice([FromBody] CreateInvoiceRequest request, CancellationToken cancellationToken)
+    [DisableRequestSizeLimit]
+    public async Task<ActionResult<Result<int>>> UploadInvoice([FromForm] CreateInvoiceRequest request, [FromForm] List<IFormFile>? files, CancellationToken cancellationToken)
     {
         try
         {
@@ -56,6 +95,42 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
 
             // Set the organization ID from the API key
             var uploadRequest = request with { OrganizationId = organizationId.Value };
+
+            // Handle file uploads (same logic as create)
+            if (files != null && files.Any())
+            {
+                const long maxFileSize = 10 * 1024 * 1024; // 10 MB
+                var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "invoices");
+                if (!Directory.Exists(uploadsRoot)) Directory.CreateDirectory(uploadsRoot);
+
+                foreach (var file in files)
+                {
+                    if (file.Length > maxFileSize)
+                    {
+                        return BadRequest(Result<int>.Failure($"File {file.FileName} exceeds maximum allowed size of {maxFileSize} bytes"));
+                    }
+
+                    var sanitizedFileName = Path.GetRandomFileName() + Path.GetExtension(file.FileName);
+                    var filePath = Path.Combine(uploadsRoot, sanitizedFileName);
+
+                    using (var stream = System.IO.File.Create(filePath))
+                    {
+                        await file.CopyToAsync(stream, cancellationToken);
+                    }
+
+                    var relativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), filePath).Replace('\\', '/');
+                    var att = new CreateInvoiceAttachmentRequest
+                    {
+                        FileName = file.FileName,
+                        ContentType = file.ContentType,
+                        Size = file.Length,
+                        Path = relativePath
+                    };
+
+                    if (uploadRequest.Attachments == null) uploadRequest = uploadRequest with { Attachments = new List<CreateInvoiceAttachmentRequest> { att } };
+                    else { var list = uploadRequest.Attachments.ToList(); list.Add(att); uploadRequest = uploadRequest with { Attachments = list }; }
+                }
+            }
 
             // Log API key usage
             LogInformation($"Invoice upload via API key for organization: {organizationId}");

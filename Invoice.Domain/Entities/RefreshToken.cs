@@ -21,7 +21,8 @@ public class RefreshToken
 
     public DateTime? RevokedAt { get; set; }
 
-    [MaxLength(100)]
+    // Increase DeviceInfo maxlength to 500
+    [MaxLength(500)]
     public string? DeviceInfo { get; set; }
 
     [MaxLength(45)]

@@ -111,6 +111,23 @@ public class InvoiceService : BaseService, IInvoiceService
                 }
             }
 
+            // Persist attachments metadata if provided
+            if (request.Attachments != null && request.Attachments.Any())
+            {
+                foreach (var a in request.Attachments)
+                {
+                    var att = new InvoiceAttachment
+                    {
+                        FileName = a.FileName,
+                        ContentType = a.ContentType,
+                        Size = a.Size,
+                        Path = a.Path,
+                        CreatedDate = DateTime.UtcNow
+                    };
+                    entity.Attachments.Add(att);
+                }
+            }
+
             await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().AddAsync(entity);
             await _unitOfWork.Save(cancellationToken);
 

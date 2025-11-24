@@ -39,6 +39,17 @@ public record CreateInvoiceRequest
     public string? Note { get; init; }
 
     public List<CreateInvoiceLineRequest> Lines { get; init; }
+
+    // New: attachments - list of metadata for files when creating via multipart/form-data this will not be used directly but kept for potential future JSON usage
+    public List<CreateInvoiceAttachmentRequest>? Attachments { get; init; }
+}
+
+public record CreateInvoiceAttachmentRequest
+{
+    public string FileName { get; init; } = string.Empty;
+    public string ContentType { get; init; } = string.Empty;
+    public long Size { get; init; }
+    public string Path { get; init; } = string.Empty;
 }
 
 public record UpdateInvoiceRequest
