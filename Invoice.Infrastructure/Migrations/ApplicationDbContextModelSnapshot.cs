@@ -228,6 +228,64 @@ namespace Invoice.Infrastructure.Migrations
                     b.ToTable("Invoices", (string)null);
                 });
 
+            modelBuilder.Entity("Invoice.Domain.Entities.InvoiceAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("CreatedById")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<long>("Size")
+                        .HasPrecision(18)
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("UpdatedById")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("InvoiceAttachments", (string)null);
+                });
+
             modelBuilder.Entity("Invoice.Domain.Entities.InvoiceBatch", b =>
                 {
                     b.Property<int>("Id")
@@ -505,7 +563,6 @@ namespace Invoice.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("AvatarUrl")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Bio")
@@ -1063,6 +1120,17 @@ namespace Invoice.Infrastructure.Migrations
                     b.Navigation("Organization");
                 });
 
+            modelBuilder.Entity("Invoice.Domain.Entities.InvoiceAttachment", b =>
+                {
+                    b.HasOne("Invoice.Domain.Entities.Invoice", "Invoice")
+                        .WithMany("Attachments")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
             modelBuilder.Entity("Invoice.Domain.Entities.InvoiceLine", b =>
                 {
                     b.HasOne("Invoice.Domain.Entities.Invoice", "Invoice")
@@ -1209,6 +1277,8 @@ namespace Invoice.Infrastructure.Migrations
 
             modelBuilder.Entity("Invoice.Domain.Entities.Invoice", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("Lines");
                 });
 

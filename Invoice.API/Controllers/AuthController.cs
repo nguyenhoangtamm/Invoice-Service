@@ -92,6 +92,7 @@ public class AuthController : ControllerBase
 
         var response = new AuthResponse
         {
+            success = true,
             Data = new AuthData
             {
                 AccessToken = result.AccessToken!,
@@ -183,6 +184,7 @@ public class AuthController : ControllerBase
 
         var response = new AuthResponse
         {
+            success = true,
             Data = new AuthData
             {
                 AccessToken = result.AccessToken!,

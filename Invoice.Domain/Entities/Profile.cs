@@ -12,7 +12,9 @@ public class Profile : BaseAuditableEntity
     public string Address { get; set; } = string.Empty;
     public string Bio { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
-    public string AvatarUrl { get; set; } = string.Empty;
+
+    // Allow AvatarUrl to be null to avoid DB not-null constraint issues
+    public string? AvatarUrl { get; set; }
 
     // Navigation property
     public virtual User User { get; set; } = null!;

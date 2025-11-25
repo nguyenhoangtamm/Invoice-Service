@@ -52,4 +52,7 @@ public class Invoice : BaseAuditableEntity
     public string? MerkleProof { get; set; }
 
     public ICollection<InvoiceLine> Lines { get; set; } = new List<InvoiceLine>();
+
+    // Attachments for the invoice (files uploaded by user)
+    public ICollection<InvoiceAttachment> Attachments { get; set; } = new List<InvoiceAttachment>();
 }
