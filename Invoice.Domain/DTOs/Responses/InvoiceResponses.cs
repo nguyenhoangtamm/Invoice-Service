@@ -187,11 +187,14 @@ public record IpfsInvoiceResponse
     [JsonPropertyName("formNumber")]
     public string? FormNumber { get; set; }
 
+    [JsonPropertyName("lookupCode")]
+    public string? LookupCode { get; set; }
+
     [JsonPropertyName("serial")]
     public string? Serial { get; set; }
 
-    [JsonPropertyName("tenantOrganizationId")]
-    public int TenantOrganizationId { get; set; }
+    [JsonPropertyName("organizationId")]
+    public int OrganizationId { get; set; }
 
     [JsonPropertyName("issuedByUserId")]
     public int? IssuedByUserId { get; set; }

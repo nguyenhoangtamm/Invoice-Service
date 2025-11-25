@@ -32,7 +32,7 @@ public class User : IdentityUser<int>, IAuditableEntity
     // Profile navigation
     public virtual Profile? Profile { get; set; }
 
-    public virtual ICollection<Organization> Organizations { get; set; } = new List<Organization>();
+    public virtual ICollection<Organization>? Organizations { get; set; } = new List<Organization>();
 
     public virtual ICollection<Invoice> IssuedInvoices { get; set; } = new List<Invoice>();
 }

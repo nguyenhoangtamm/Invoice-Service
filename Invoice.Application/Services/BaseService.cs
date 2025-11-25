@@ -71,7 +71,7 @@ public abstract class BaseService
                 if (roles != null && roles.Any())
                     return roles;
                     
-                // Fallback v? Items n?u có
+                // Fallback v? Items n?u c?
                 return _httpContextAccessor.HttpContext?.Items["Roles"] as List<string> ?? new List<string>();
             }
             catch (Exception e)
@@ -80,6 +80,16 @@ public abstract class BaseService
                 return new List<string>();
             }
         }
+    }
+
+    protected int GetCurrentUserId()
+    {
+        var userIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(userIdClaim, out var userId))
+        {
+            return userId;
+        }
+        return 0;
     }
 
     protected void LogInformation(string message)

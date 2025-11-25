@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Invoice.Application.Extensions;
 using Invoice.Application.Interfaces;
@@ -76,7 +76,7 @@ public class InvoiceService : BaseService, IInvoiceService
                 CustomerAddress = request.CustomerAddress,
                 CustomerPhone = request.CustomerPhone,
                 CustomerEmail = request.CustomerEmail,
-                Status = request.Status,
+                Status = request.Status == 0 ? 0 : request.Status,
                 IssuedDate = request.IssuedDate,
                 SubTotal = request.SubTotal,
                 TaxAmount = request.TaxAmount,
@@ -266,8 +266,13 @@ public class InvoiceService : BaseService, IInvoiceService
                 invoicesQuery = invoicesQuery.Where(i => i.InvoiceNumber.ToLower().Contains(k) ||
                                                          (i.CustomerName != null && i.CustomerName.ToLower().Contains(k)));
             }
+            if (query.Status.HasValue)
+            {
+                invoicesQuery = invoicesQuery.Where(i => i.Status == query.Status.Value);
+            }
 
             return await invoicesQuery.OrderByDescending(x => x.IssuedDate)
+                .ThenByDescending(x => x.Id)
                 .ProjectTo<InvoiceResponse>(_mapper.ConfigurationProvider)
                 .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken);
         }
@@ -299,8 +304,12 @@ public class InvoiceService : BaseService, IInvoiceService
                 invoicesQuery = invoicesQuery.Where(i => i.InvoiceNumber.ToLower().Contains(k) ||
                                                          (i.CustomerName != null && i.CustomerName.ToLower().Contains(k)));
             }
-
+            if (query.Status.HasValue)
+            {
+                invoicesQuery = invoicesQuery.Where(i => i.Status == query.Status.Value);
+            }
             return await invoicesQuery.OrderByDescending(x => x.IssuedDate)
+                .ThenByDescending(x => x.Id)
                 .ProjectTo<InvoiceResponse>(_mapper.ConfigurationProvider)
                 .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken);
         }
@@ -366,8 +375,6 @@ public class InvoiceService : BaseService, IInvoiceService
                     return Convert.FromHexString(clean);
                 })
                 .ToArray();
-            // invoiceCidHash
-            var invoiceCidHash = ComputeHash(invoiceCid);
             var gasPrice = await _web3.Eth.GasPrice.SendRequestAsync();
             var maxGasPrice = new HexBigInteger(_config.MaxGasPrice);
 
@@ -376,11 +383,11 @@ public class InvoiceService : BaseService, IInvoiceService
                 gasPrice = maxGasPrice;
             }
 
-            // Send transaction
-            //var isValid = await verifyFunction.CallAsync<bool>(
-            //    merkleRootBytes,
-            //    invoiceCidHash,
-            //    proofBytes32);
+            //Send transaction
+            var isValid = await verifyFunction.CallAsync<bool>(
+                merkleRootBytes,
+                invoiceCid,
+                proofBytes32);
             // getMetadataURI
             var metadataUri = await getMetadataURIFunction.CallAsync<string>(merkleRootBytes);
             // call api to get the invoice data from ipfs
@@ -417,8 +424,8 @@ public class InvoiceService : BaseService, IInvoiceService
             var onChainInvoice = ConvertIpfsInvoiceToEntity(ipfsInvoice);
 
             var result = _mapper.Map<VerifyInvoiceResponse>(onChainInvoice);
-            result.IsValid = true;
-            result.Message = true ? "Invoice is valid" : "Invoice is invalid";
+            result.IsValid = isValid;
+            result.Message = isValid ? "Invoice is valid" : "Invoice is invalid";
             result.OffChainInvoice = _mapper.Map<InvoiceResponse>(invoice);
             result.OnChainInvoice = _mapper.Map<InvoiceResponse>(onChainInvoice);
 
@@ -448,9 +455,13 @@ public class InvoiceService : BaseService, IInvoiceService
                 var k = query.Code.Trim();
                 invoicesQuery = invoicesQuery.Where(i => EF.Functions.Like(i.LookupCode ?? string.Empty, $"%{k}%"));
             }
-
+            if (query.Status.HasValue)
+            {
+                invoicesQuery = invoicesQuery.Where(i => i.Status == query.Status.Value);
+            }
             var page = await invoicesQuery
                 .OrderByDescending(x => x.IssuedDate)
+                .ThenByDescending(x => x.Id)
                 .ProjectTo<InvoiceLookUpResponse>(_mapper.ConfigurationProvider)
                 .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken);
 
@@ -480,8 +491,9 @@ public class InvoiceService : BaseService, IInvoiceService
             Id = ipfsInvoice.Id,
             InvoiceNumber = ipfsInvoice.InvoiceNumber,
             FormNumber = ipfsInvoice.FormNumber,
+            LookupCode = ipfsInvoice.LookupCode,
             Serial = ipfsInvoice.Serial,
-            OrganizationId = ipfsInvoice.TenantOrganizationId,
+            OrganizationId = ipfsInvoice.OrganizationId,
             IssuedByUserId = ipfsInvoice.IssuedByUserId,
             CreatedDate = ipfsInvoice.Metadata?.CreatedAt ?? DateTime.UtcNow
         };
