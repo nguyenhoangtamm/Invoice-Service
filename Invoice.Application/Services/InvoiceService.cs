@@ -450,6 +450,7 @@ public class InvoiceService : BaseService, IInvoiceService
                 .AsNoTracking()
                 .AsQueryable();
 
+
             if (!string.IsNullOrWhiteSpace(query.Code))
             {
                 var k = query.Code.Trim();
@@ -462,6 +463,7 @@ public class InvoiceService : BaseService, IInvoiceService
             var page = await invoicesQuery
                 .OrderByDescending(x => x.IssuedDate)
                 .ThenByDescending(x => x.Id)
+                .Include(i => i.Attachments)
                 .ProjectTo<InvoiceLookUpResponse>(_mapper.ConfigurationProvider)
                 .ToPaginatedListAsync(query.PageNumber, query.PageSize, cancellationToken);
 

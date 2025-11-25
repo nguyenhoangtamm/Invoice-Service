@@ -71,7 +71,7 @@ public record InvoiceResponse : IMapFrom<Invoice.Domain.Entities.Invoice>
     public void Mapping(AutoMapper.Profile profile)
     {
         profile.CreateMap<Invoice.Domain.Entities.Invoice, InvoiceResponse>()
-            .ForMember(dest => dest.AttachmentFileIds, 
+            .ForMember(dest => dest.AttachmentFileIds,
                 opt => opt.MapFrom(src => src.Attachments.Select(a => a.Id).ToList()));
     }
 }
@@ -259,10 +259,14 @@ public record InvoiceLookUpResponse : IMapFrom<Invoice.Domain.Entities.Invoice>
     public string? MerkleProof { get; set; }
 
     public bool IsExactMatch { get; set; }
+    public List<int> AttachmentFileIds { get; set; } = new List<int>();
+
     public List<InvoiceLineResponse> Lines { get; set; } = new List<InvoiceLineResponse>();
 
     public void Mapping(AutoMapper.Profile profile)
     {
-        profile.CreateMap<Invoice.Domain.Entities.Invoice, InvoiceLookUpResponse>();
+        profile.CreateMap<Invoice.Domain.Entities.Invoice, InvoiceLookUpResponse>()
+            .ForMember(dest => dest.AttachmentFileIds,
+                opt => opt.MapFrom(src => src.Attachments.Select(a => a.Id).ToList()));
     }
 }
