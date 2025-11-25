@@ -2,6 +2,7 @@ using Invoice.Domain.Common.Mappings;
 using Invoice.Domain.Enums;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace Invoice.Domain.DTOs.Responses;
@@ -63,8 +64,16 @@ public record InvoiceResponse : IMapFrom<Invoice.Domain.Entities.Invoice>
     public string? Cid { get; set; }
     public string? CidHash { get; set; }
     public string? MerkleProof { get; set; }
+    public List<int> AttachmentFileIds { get; set; } = new List<int>();
 
     public List<InvoiceLineResponse> Lines { get; set; } = new List<InvoiceLineResponse>();
+
+    public void Mapping(AutoMapper.Profile profile)
+    {
+        profile.CreateMap<Invoice.Domain.Entities.Invoice, InvoiceResponse>()
+            .ForMember(dest => dest.AttachmentFileIds, 
+                opt => opt.MapFrom(src => src.Attachments.Select(a => a.Id).ToList()));
+    }
 }
 
 // IPFS Response Models
@@ -248,4 +257,9 @@ public record InvoiceLookUpResponse : IMapFrom<Invoice.Domain.Entities.Invoice>
 
     public bool IsExactMatch { get; set; }
     public List<InvoiceLineResponse> Lines { get; set; } = new List<InvoiceLineResponse>();
+
+    public void Mapping(AutoMapper.Profile profile)
+    {
+        profile.CreateMap<Invoice.Domain.Entities.Invoice, InvoiceLookUpResponse>();
+    }
 }

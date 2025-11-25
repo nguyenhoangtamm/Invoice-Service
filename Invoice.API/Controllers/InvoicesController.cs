@@ -10,13 +10,37 @@ using System.Security.Claims;
 namespace Invoice.API.Controllers;
 
 [Authorize]
-public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceService invoiceService) : ApiControllerBase(logger)
+public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceService invoiceService, IInvoiceFileService fileService) : ApiControllerBase(logger)
 {
     private readonly IInvoiceService _invoiceService = invoiceService;
+    private readonly IInvoiceFileService _fileService = fileService;
+
+    // New API endpoint for uploading files separately
+    [HttpPost("upload-file")]
+    [DisableRequestSizeLimit]
+    public async Task<ActionResult<Result<UploadInvoiceFileResponse>>> UploadFile(IFormFile file, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation("Uploading invoice file");
+
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(Result<UploadInvoiceFileResponse>.Failure("No file provided"));
+            }
+
+            return await _fileService.UploadFileAsync(file, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogError("Error uploading invoice file", ex);
+            return StatusCode(500, Result<UploadInvoiceFileResponse>.Failure("An error occurred while uploading the file"));
+        }
+    }
 
     [HttpPost("create")]
     [DisableRequestSizeLimit]
-    public async Task<ActionResult<Result<int>>> Create([FromForm] CreateInvoiceRequest request, [FromForm] List<IFormFile>? files, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<int>>> Create([FromBody] CreateInvoiceRequest request, CancellationToken cancellationToken)
     {
         try
         {
@@ -28,43 +52,6 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
             }
             // Set the IssuedByUserId to the authenticated user's ID
             request = request with { IssuedByUserId = userId };
-
-            // Handle file uploads
-            if (files != null && files.Any())
-            {
-                const long maxFileSize = 10 * 1024 * 1024; // 10 MB
-                var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "invoices");
-                if (!Directory.Exists(uploadsRoot)) Directory.CreateDirectory(uploadsRoot);
-
-                foreach (var file in files)
-                {
-                    if (file.Length > maxFileSize)
-                    {
-                        return BadRequest(Result<int>.Failure($"File {file.FileName} exceeds maximum allowed size of {maxFileSize} bytes"));
-                    }
-
-                    var sanitizedFileName = Path.GetRandomFileName() + Path.GetExtension(file.FileName);
-                    var filePath = Path.Combine(uploadsRoot, sanitizedFileName);
-
-                    using (var stream = System.IO.File.Create(filePath))
-                    {
-                        await file.CopyToAsync(stream, cancellationToken);
-                    }
-
-                    // Add attachment metadata to request (so service can persist attachment records)
-                    var relativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), filePath).Replace('\\', '/');
-                    var att = new CreateInvoiceAttachmentRequest
-                    {
-                        FileName = file.FileName,
-                        ContentType = file.ContentType,
-                        Size = file.Length,
-                        Path = relativePath
-                    };
-
-                    if (request.Attachments == null) request = request with { Attachments = new List<CreateInvoiceAttachmentRequest> { att } };
-                    else { var list = request.Attachments.ToList(); list.Add(att); request = request with { Attachments = list }; }
-                }
-            }
 
             return await _invoiceService.Create(request, cancellationToken);
         }
@@ -80,7 +67,7 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
     [ApiKeyAuth]
     [AllowAnonymous] // Override the controller's Authorize attribute since we're using API key auth
     [DisableRequestSizeLimit]
-    public async Task<ActionResult<Result<int>>> UploadInvoice([FromForm] CreateInvoiceRequest request, [FromForm] List<IFormFile>? files, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<int>>> UploadInvoice([FromBody] CreateInvoiceRequest request, CancellationToken cancellationToken)
     {
         try
         {
@@ -95,42 +82,6 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
 
             // Set the organization ID from the API key
             var uploadRequest = request with { OrganizationId = organizationId.Value };
-
-            // Handle file uploads (same logic as create)
-            if (files != null && files.Any())
-            {
-                const long maxFileSize = 10 * 1024 * 1024; // 10 MB
-                var uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "invoices");
-                if (!Directory.Exists(uploadsRoot)) Directory.CreateDirectory(uploadsRoot);
-
-                foreach (var file in files)
-                {
-                    if (file.Length > maxFileSize)
-                    {
-                        return BadRequest(Result<int>.Failure($"File {file.FileName} exceeds maximum allowed size of {maxFileSize} bytes"));
-                    }
-
-                    var sanitizedFileName = Path.GetRandomFileName() + Path.GetExtension(file.FileName);
-                    var filePath = Path.Combine(uploadsRoot, sanitizedFileName);
-
-                    using (var stream = System.IO.File.Create(filePath))
-                    {
-                        await file.CopyToAsync(stream, cancellationToken);
-                    }
-
-                    var relativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), filePath).Replace('\\', '/');
-                    var att = new CreateInvoiceAttachmentRequest
-                    {
-                        FileName = file.FileName,
-                        ContentType = file.ContentType,
-                        Size = file.Length,
-                        Path = relativePath
-                    };
-
-                    if (uploadRequest.Attachments == null) uploadRequest = uploadRequest with { Attachments = new List<CreateInvoiceAttachmentRequest> { att } };
-                    else { var list = uploadRequest.Attachments.ToList(); list.Add(att); uploadRequest = uploadRequest with { Attachments = list }; }
-                }
-            }
 
             // Log API key usage
             LogInformation($"Invoice upload via API key for organization: {organizationId}");
@@ -294,6 +245,65 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
         {
             LogError($"Error looking up invoice with code: {request.Code}", ex);
             return StatusCode(500, Result<InvoiceResponse>.Failure("An error occurred while looking up the invoice"));
+        }
+    }
+
+    // New API endpoint for linking uploaded files to invoice
+    [HttpPost("link-files/{invoiceId}")]
+    public async Task<ActionResult<Result<int>>> LinkFilesToInvoice([FromRoute] int invoiceId, [FromBody] List<int> fileIds, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Linking files to invoice with ID: {invoiceId}");
+
+            return await _fileService.LinkFilesToInvoiceAsync(invoiceId, fileIds, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error linking files to invoice with ID: {invoiceId}", ex);
+            return StatusCode(500, Result<int>.Failure("An error occurred while linking files to invoice"));
+        }
+    }
+
+    // New API endpoint for deleting uploaded files
+    [HttpPost("delete-file/{fileId}")]
+    public async Task<ActionResult<Result<int>>> DeleteFile([FromRoute] int fileId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Deleting file with ID: {fileId}");
+
+            return await _fileService.DeleteFileAsync(fileId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error deleting file with ID: {fileId}", ex);
+            return StatusCode(500, Result<int>.Failure("An error occurred while deleting the file"));
+        }
+    }
+
+    // New API endpoint for downloading uploaded files
+    [HttpGet("download-file/{fileId}")]
+    public async Task<IActionResult> DownloadFile([FromRoute] int fileId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Downloading file with ID: {fileId}");
+
+            var (success, filePath, fileName, contentType) = await _fileService.GetFileAsync(fileId, cancellationToken);
+            
+            if (!success)
+            {
+                return NotFound(Result<string>.Failure("File not found"));
+            }
+
+            var fileBytes = System.IO.File.ReadAllBytes(filePath);
+            return File(fileBytes, contentType, fileName);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error downloading file with ID: {fileId}", ex);
+            return StatusCode(500, Result<string>.Failure("An error occurred while downloading the file"));
         }
     }
 }

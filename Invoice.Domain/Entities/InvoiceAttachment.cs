@@ -4,8 +4,8 @@ namespace Invoice.Domain.Entities;
 
 public class InvoiceAttachment : BaseAuditableEntity
 {
-    public int InvoiceId { get; set; }
-    public Invoice Invoice { get; set; } = default!;
+    public int? InvoiceId { get; set; }
+    public Invoice? Invoice { get; set; }
 
     public string FileName { get; set; } = default!;
     public string ContentType { get; set; } = default!;

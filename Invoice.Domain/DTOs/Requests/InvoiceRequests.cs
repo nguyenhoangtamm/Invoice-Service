@@ -40,12 +40,22 @@ public record CreateInvoiceRequest
 
     public List<CreateInvoiceLineRequest> Lines { get; init; }
 
-    // New: attachments - list of metadata for files when creating via multipart/form-data this will not be used directly but kept for potential future JSON usage
-    public List<CreateInvoiceAttachmentRequest>? Attachments { get; init; }
+    // File attachment IDs (uploaded via separate file upload endpoint)
+    public List<int>? AttachmentFileIds { get; init; }
 }
 
 public record CreateInvoiceAttachmentRequest
 {
+    public string FileName { get; init; } = string.Empty;
+    public string ContentType { get; init; } = string.Empty;
+    public long Size { get; init; }
+    public string Path { get; init; } = string.Empty;
+}
+
+// DTOs for file upload responses
+public record UploadInvoiceFileResponse
+{
+    public int FileId { get; init; }
     public string FileName { get; init; } = string.Empty;
     public string ContentType { get; init; } = string.Empty;
     public long Size { get; init; }

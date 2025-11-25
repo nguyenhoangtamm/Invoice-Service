@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddTransient<IInvoiceBatchService, InvoiceBatchService>();
         services.AddTransient<IApiKeyService, ApiKeyService>();
         services.AddTransient<IDashboardService, DashboardService>();
+        services.AddTransient<IInvoiceFileService, InvoiceFileService>();
 
         // New services
         services.AddTransient<IOrganizationService, OrganizationService>();

@@ -112,25 +112,29 @@ public class InvoiceService : BaseService, IInvoiceService
                 }
             }
 
-            // Persist attachments metadata if provided
-            if (request.Attachments != null && request.Attachments.Any())
-            {
-                foreach (var a in request.Attachments)
-                {
-                    var att = new InvoiceAttachment
-                    {
-                        FileName = a.FileName,
-                        ContentType = a.ContentType,
-                        Size = a.Size,
-                        Path = a.Path,
-                        CreatedDate = DateTime.UtcNow
-                    };
-                    entity.Attachments.Add(att);
-                }
-            }
-
             await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().AddAsync(entity);
             await _unitOfWork.Save(cancellationToken);
+
+            // Link files to invoice if any attachment file IDs provided
+            if (request.AttachmentFileIds != null && request.AttachmentFileIds.Any())
+            {
+                var attachments = await _unitOfWork.Repository<InvoiceAttachment>()
+                    .Entities
+                    .Where(a => request.AttachmentFileIds.Contains(a.Id) && !a.InvoiceId.HasValue)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var att in attachments)
+                {
+                    att.InvoiceId = entity.Id;
+                    att.UpdatedDate = DateTime.UtcNow;
+                    await _unitOfWork.Repository<InvoiceAttachment>().UpdateAsync(att);
+                }
+
+                if (attachments.Any())
+                {
+                    await _unitOfWork.Save(cancellationToken);
+                }
+            }
 
             return Result<int>.Success(entity.Id, "Invoice created successfully");
         }
@@ -208,6 +212,7 @@ public class InvoiceService : BaseService, IInvoiceService
             var entity = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
                 .AsNoTracking()
                 .Include(i => i.Lines)
+                .Include(i => i.Attachments)
                 .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
             if (entity == null) return Result<InvoiceResponse>.Failure("Invoice not found");
 
@@ -228,6 +233,7 @@ public class InvoiceService : BaseService, IInvoiceService
             var entities = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
                 .AsNoTracking()
                 .Include(i => i.Lines)
+                .Include(i => i.Attachments)
                 .ToListAsync(cancellationToken);
             var response = _mapper.Map<List<InvoiceResponse>>(entities);
             return Result<List<InvoiceResponse>>.Success(response, "Invoices retrieved");
@@ -248,6 +254,7 @@ public class InvoiceService : BaseService, IInvoiceService
             var invoicesQuery = _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
                 .AsNoTracking()
                 .Include(i => i.Lines)
+                .Include(i => i.Attachments)
                 .AsQueryable();
 
             if (query.OrganizationId.HasValue)
@@ -280,6 +287,7 @@ public class InvoiceService : BaseService, IInvoiceService
             var invoicesQuery = _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
                 .AsNoTracking()
                 .Include(i => i.Lines)
+                .Include(i => i.Attachments)
                 .Where(i => i.IssuedByUserId == query.UserId);
 
             if (query.OrganizationId.HasValue)
