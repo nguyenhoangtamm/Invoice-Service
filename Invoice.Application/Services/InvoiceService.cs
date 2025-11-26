@@ -453,8 +453,8 @@ public class InvoiceService : BaseService, IInvoiceService
 
             if (!string.IsNullOrWhiteSpace(query.Code))
             {
-                var k = query.Code.Trim();
-                invoicesQuery = invoicesQuery.Where(i => EF.Functions.Like(i.LookupCode ?? string.Empty, $"%{k}%"));
+                var k = query.Code.Trim().ToLower();
+                invoicesQuery = invoicesQuery.Where(i => i.LookupCode.ToLower().Contains(k));
             }
             if (query.Status.HasValue)
             {
