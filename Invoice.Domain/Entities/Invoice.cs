@@ -55,4 +55,7 @@ public class Invoice : BaseAuditableEntity
 
     // Attachments for the invoice (files uploaded by user)
     public ICollection<InvoiceAttachment> Attachments { get; set; } = new List<InvoiceAttachment>();
+    
+    // Reports about this invoice
+    public ICollection<InvoiceReport> Reports { get; set; } = new List<InvoiceReport>();
 }

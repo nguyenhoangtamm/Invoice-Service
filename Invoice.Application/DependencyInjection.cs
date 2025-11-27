@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddTransient<IApiKeyService, ApiKeyService>();
         services.AddTransient<IDashboardService, DashboardService>();
         services.AddTransient<IInvoiceFileService, InvoiceFileService>();
+        services.AddTransient<IInvoiceReportService, InvoiceReportService>();
 
         // New services
         services.AddTransient<IOrganizationService, OrganizationService>();

@@ -35,6 +35,9 @@ public class User : IdentityUser<int>, IAuditableEntity
     public virtual ICollection<Organization>? Organizations { get; set; } = new List<Organization>();
 
     public virtual ICollection<Invoice> IssuedInvoices { get; set; } = new List<Invoice>();
+    
+    // Reports submitted by this user
+    public virtual ICollection<InvoiceReport> InvoiceReports { get; set; } = new List<InvoiceReport>();
 }
 
 
