@@ -248,6 +248,29 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
         }
     }
 
+    [HttpPost("sync-blockchain/{invoiceId}")]
+    public async Task<ActionResult<Result<InvoiceResponse>>> SyncInvoiceFromBlockchain([FromRoute] int invoiceId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Syncing invoice with ID: {invoiceId} from blockchain");
+
+            var result = await _invoiceService.SyncInvoiceFromBlockchainAsync(invoiceId, cancellationToken);
+            
+            if (result.Succeeded)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error syncing invoice with ID: {invoiceId} from blockchain", ex);
+            return StatusCode(500, Result<InvoiceResponse>.Failure("An error occurred while syncing invoice from blockchain"));
+        }
+    }
+
     // New API endpoint for linking uploaded files to invoice
     [HttpPost("link-files/{invoiceId}")]
     public async Task<ActionResult<Result<int>>> LinkFilesToInvoice([FromRoute] int invoiceId, [FromBody] List<int> fileIds, CancellationToken cancellationToken)

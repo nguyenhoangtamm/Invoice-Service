@@ -15,4 +15,5 @@ public interface IInvoiceService
     Task<Result<int>> Delete(int id, CancellationToken cancellationToken);
     Task<Result<VerifyInvoiceResponse>> VerifyInvoiceAsync(int invoiceId, CancellationToken cancellationToken);
     Task<PaginatedResult<InvoiceLookUpResponse>> LookupByCode(GetInvoiceLookUpWithPagination query, CancellationToken cancellationToken);
+    Task<Result<InvoiceResponse>> SyncInvoiceFromBlockchainAsync(int invoiceId, CancellationToken cancellationToken);
 }

@@ -570,4 +570,140 @@ public class InvoiceService : BaseService, IInvoiceService
         var hashBytes = keccak.CalculateHash(Encoding.UTF8.GetBytes(input));
         return "0x" + Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
+
+    public async Task<Result<InvoiceResponse>> SyncInvoiceFromBlockchainAsync(int invoiceId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Syncing invoice ID: {invoiceId} from blockchain");
+
+            var invoice = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>()
+                .Entities
+                .Include(i => i.Batch)
+                .Include(i => i.Lines)
+                .FirstOrDefaultAsync(i => i.Id == invoiceId, cancellationToken);
+            
+            if (invoice == null)
+                return Result<InvoiceResponse>.Failure("Invoice not found");
+
+            if (invoice.Batch == null)
+                return Result<InvoiceResponse>.Failure("Invoice batch not found");
+
+            var merkleRoot = invoice.Batch.MerkleRoot;
+            if (string.IsNullOrEmpty(merkleRoot))
+                return Result<InvoiceResponse>.Failure("Batch merkle root not found");
+
+            var merkleProof = JsonSerializer.Deserialize<List<string>>(invoice.MerkleProof);
+
+            if (merkleProof == null || merkleProof.Count() == 0)
+                return Result<InvoiceResponse>.Failure("Invoice merkle proof not found");
+
+            var invoiceCid = invoice.Cid;
+            if (string.IsNullOrEmpty(invoiceCid))
+                return Result<InvoiceResponse>.Failure("Invoice CID not found");
+
+            var contract = _web3.Eth.GetContract(_config.ContractAbi, _config.ContractAddress);
+            var getMetadataURIFunction = contract.GetFunction("getMetadataURI");
+            
+            // Convert merkle root to bytes32
+            var merkleRootBytes = Convert.FromHexString(merkleRoot.StartsWith("0x") ? merkleRoot[2..] : merkleRoot);
+
+            // Get metadata URI from blockchain
+            var metadataUri = await getMetadataURIFunction.CallAsync<string>(merkleRootBytes);
+            
+            // Retrieve the invoice data from IPFS
+            var metadataUrl = $"https://coffee-mad-rooster-78.mypinata.cloud/ipfs/{metadataUri}";
+            var httpClient = new HttpClient();
+            var response = await httpClient.GetAsync(metadataUrl, cancellationToken);
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            var uriResponse = JsonSerializer.Deserialize<UriResponse>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (uriResponse == null || uriResponse.Cids == null)
+                return Result<InvoiceResponse>.Failure("Failed to retrieve batch metadata from blockchain");
+
+            var cidDetail = uriResponse.Cids.FirstOrDefault(c => c.InvoiceId == invoiceId);
+            if (cidDetail == null)
+                return Result<InvoiceResponse>.Failure("Invoice not found in blockchain batch");
+
+            // Get the invoice data from IPFS
+            var invoiceUrl = $"https://coffee-mad-rooster-78.mypinata.cloud/ipfs/{cidDetail.Cid}";
+            var invoiceResponse = await httpClient.GetAsync(invoiceUrl, cancellationToken);
+            var invoiceContent = await invoiceResponse.Content.ReadAsStringAsync(cancellationToken);
+            var ipfsInvoice = JsonSerializer.Deserialize<IpfsInvoiceResponse>(invoiceContent, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (ipfsInvoice == null)
+                return Result<InvoiceResponse>.Failure("Failed to retrieve on-chain invoice data");
+
+            // Update the database with blockchain data
+            invoice.SellerName = ipfsInvoice.SellerInfo?.SellerName ?? invoice.SellerName;
+            invoice.SellerTaxId = ipfsInvoice.SellerInfo?.SellerTaxId ?? invoice.SellerTaxId;
+            invoice.SellerAddress = ipfsInvoice.SellerInfo?.SellerAddress ?? invoice.SellerAddress;
+            invoice.SellerPhone = ipfsInvoice.SellerInfo?.SellerPhone ?? invoice.SellerPhone;
+            invoice.SellerEmail = ipfsInvoice.SellerInfo?.SellerEmail ?? invoice.SellerEmail;
+
+            invoice.CustomerName = ipfsInvoice.CustomerInfo?.CustomerName ?? invoice.CustomerName;
+            invoice.CustomerTaxId = ipfsInvoice.CustomerInfo?.CustomerTaxId ?? invoice.CustomerTaxId;
+            invoice.CustomerAddress = ipfsInvoice.CustomerInfo?.CustomerAddress ?? invoice.CustomerAddress;
+            invoice.CustomerPhone = ipfsInvoice.CustomerInfo?.CustomerPhone ?? invoice.CustomerPhone;
+            invoice.CustomerEmail = ipfsInvoice.CustomerInfo?.CustomerEmail ?? invoice.CustomerEmail;
+
+            invoice.IssuedDate = ipfsInvoice.InvoiceDetails?.IssueDate ?? invoice.IssuedDate;
+            invoice.SubTotal = ipfsInvoice.InvoiceDetails?.SubTotal ?? invoice.SubTotal;
+            invoice.TaxAmount = ipfsInvoice.InvoiceDetails?.TaxAmount ?? invoice.TaxAmount;
+            invoice.DiscountAmount = ipfsInvoice.InvoiceDetails?.DiscountAmount ?? invoice.DiscountAmount;
+            invoice.TotalAmount = ipfsInvoice.InvoiceDetails?.TotalAmount ?? invoice.TotalAmount;
+            invoice.Currency = ipfsInvoice.InvoiceDetails?.Currency ?? invoice.Currency;
+            invoice.Note = ipfsInvoice.InvoiceDetails?.Note ?? invoice.Note;
+
+            // Update invoice lines
+            if (ipfsInvoice.Lines != null && ipfsInvoice.Lines.Any())
+            {
+                // Remove existing lines
+                foreach (var existingLine in invoice.Lines.ToList())
+                {
+                    await _unitOfWork.Repository<InvoiceLine>().DeleteAsync(existingLine);
+                }
+
+                // Add new lines from blockchain
+                foreach (var ipfsLine in ipfsInvoice.Lines)
+                {
+                    var invoiceLine = new InvoiceLine
+                    {
+                        InvoiceId = invoiceId,
+                        LineNumber = ipfsLine.LineNumber,
+                        Name = ipfsLine.Name,
+                        Unit = ipfsLine.Unit,
+                        Quantity = ipfsLine.Quantity,
+                        UnitPrice = ipfsLine.UnitPrice,
+                        Discount = ipfsLine.Discount,
+                        TaxRate = ipfsLine.TaxRate,
+                        TaxAmount = ipfsLine.TaxAmount,
+                        LineTotal = ipfsLine.LineTotal,
+                        CreatedDate = DateTime.UtcNow
+                    };
+
+                    invoice.Lines.Add(invoiceLine);
+                }
+            }
+
+            invoice.UpdatedDate = DateTime.UtcNow;
+            await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().UpdateAsync(invoice);
+            await _unitOfWork.Save(cancellationToken);
+
+            var resultResponse = _mapper.Map<InvoiceResponse>(invoice);
+            LogInformation($"Invoice {invoiceId} synced successfully from blockchain");
+            return Result<InvoiceResponse>.Success(resultResponse, "Invoice synced successfully from blockchain");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error syncing invoice {invoiceId} from blockchain", ex);
+            return Result<InvoiceResponse>.Failure("Failed to sync invoice from blockchain");
+        }
+    }
 }
