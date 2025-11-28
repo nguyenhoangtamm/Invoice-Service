@@ -2,12 +2,14 @@ using AutoMapper;
 using Invoice.Application.Interfaces;
 using Invoice.Application.Services;
 using Invoice.Domain.DTOs.Requests;
+using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Entities;
 using Invoice.Domain.Interfaces;
 using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -189,54 +191,29 @@ public class RoleService : BaseService, IRoleService
         }
     }
 
-    public async Task<object> GetRolesWithPagination(GetRolesWithPaginationQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<GetRolesWithPaginationDto>> GetRolesWithPagination(GetRolesWithPaginationQuery query, CancellationToken cancellationToken)
     {
         try
         {
             LogInformation($"Getting roles with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
 
-            // Global Query Filter s? t? ??ng lo?i b? các role có IsDeleted = true
-            var rolesQuery = _roleManager.Roles.AsQueryable();
-
-            if (!string.IsNullOrEmpty(query.SearchTerm))
-            {
-                rolesQuery = rolesQuery.Where(x => x.Name!.Contains(query.SearchTerm) ||
-                                                   x.Description.Contains(query.SearchTerm));
-            }
-
-            var totalCount = await rolesQuery.CountAsync(cancellationToken);
-            var totalPages = (int)Math.Ceiling((double)totalCount / query.PageSize);
-
-            var roles = await rolesQuery
+            var roles = await _roleManager.Roles
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
-                .Select(role => new
-                {
-                    role.Id,
-                    role.Name,
-                    role.Description,
-                    role.CreatedBy,
-                    role.CreatedDate,
-                    role.UpdatedBy,
-                    role.UpdatedDate
-                })
                 .ToListAsync(cancellationToken);
+            var totalCount = await _roleManager.Roles.CountAsync(cancellationToken);
 
-            var result = new
-            {
-                data = roles, // Changed from "Data" to "data" (lowercase)
-                TotalCount = totalCount,
-                TotalPages = totalPages,
-                CurrentPage = query.PageNumber,
-                PageSize = query.PageSize
-            };
+            var rolesDto = _mapper.Map<List<GetRolesWithPaginationDto>>(roles);
 
-            return Result<object>.Success(result, "Roles with pagination retrieved successfully");
+            var result = PaginatedResult<GetRolesWithPaginationDto>.Create(rolesDto, totalCount, query.PageNumber, query.PageSize);
+
+            LogInformation($"Retrieved {roles.Count} roles successfully for page {query.PageNumber}");
+            return result;
         }
         catch (Exception ex)
         {
             LogError("Error getting roles with pagination", ex);
-            return Result<object>.Failure("An error occurred while retrieving roles");
+            throw new Exception("An error occurred while retrieving user with pagination");
         }
     }
 }

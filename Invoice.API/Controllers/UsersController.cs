@@ -33,29 +33,30 @@ public class UsersController(ILogger<UsersController> logger, IUserService userS
     {
         try
         {
-            if (id != request.Id)
+            if (id != id)
             {
                 return BadRequest(Result<int>.Failure("ID in route does not match ID in body"));
             }
-            LogInformation($"Updating user with ID: {request.Id}");
+            LogInformation($"Updating user with ID: {id}");
 
             var updateRequest = new UpdateUserRequest
             {
                 Username = request.Username,
                 Email = request.Email,
-                Password = request.Password,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 Gender = request.Gender,
                 RoleId = request.RoleId,
-                Status = request.Status
+                Status = request.Status,
+                Phone = request.Phone,
+                Address = request.Address
             };
 
-            return await _userService.Update(request.Id, updateRequest, cancellationToken);
+            return await _userService.Update(id, updateRequest, cancellationToken);
         }
         catch (Exception ex)
         {
-            LogError($"Error updating user with ID: {request.Id}", ex);
+            LogError($"Error updating user with ID: {id}", ex);
             return StatusCode(500, Result<int>.Failure("An error occurred while updating the user"));
         }
     }
@@ -77,7 +78,7 @@ public class UsersController(ILogger<UsersController> logger, IUserService userS
         }
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("get-by-id/{id}")]
     public async Task<ActionResult<Result<GetUserDto>>> GetById(int id, CancellationToken cancellationToken)
     {
         try

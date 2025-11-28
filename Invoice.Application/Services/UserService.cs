@@ -64,6 +64,7 @@ public class UserService : BaseService, IUserService
                 Bio = string.Empty,
                 Phone = string.Empty,
                 AvatarUrl = string.Empty,
+                PhoneNumber = request.Phone,
                 CreatedDate = DateTime.UtcNow,
             };
 
@@ -138,6 +139,12 @@ public class UserService : BaseService, IUserService
             {
                 user.Gender = request.Gender.Value.ToString();
             }
+            if (!string.IsNullOrEmpty(request.Phone))
+            {
+                user.PhoneNumber = request.Phone;
+            }
+            if (!string.IsNullOrEmpty(request.Address))
+                user.Address = request.Address;
 
             user.UpdatedDate = DateTime.UtcNow;
             await _userRepository.UpdateAsync(user);

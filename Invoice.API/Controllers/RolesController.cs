@@ -1,4 +1,5 @@
 using Invoice.Domain.DTOs.Requests;
+using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
 using Microsoft.AspNetCore.Authorization;
@@ -100,7 +101,7 @@ public class RolesController(ILogger<RolesController> logger, IRoleService roleS
     }
 
     [HttpGet("get-pagination")]
-    public async Task<ActionResult<object>> GetRolesWithPagination([FromQuery] GetRolesWithPaginationQuery request, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<PaginatedResult<GetRolesWithPaginationDto>>> GetRolesWithPagination([FromQuery] GetRolesWithPaginationQuery request, CancellationToken cancellationToken = default)
     {
         try
         {
