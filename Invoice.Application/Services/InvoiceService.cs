@@ -582,7 +582,7 @@ public class InvoiceService : BaseService, IInvoiceService
                 .Include(i => i.Batch)
                 .Include(i => i.Lines)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId, cancellationToken);
-            
+
             if (invoice == null)
                 return Result<InvoiceResponse>.Failure("Invoice not found");
 
@@ -604,13 +604,13 @@ public class InvoiceService : BaseService, IInvoiceService
 
             var contract = _web3.Eth.GetContract(_config.ContractAbi, _config.ContractAddress);
             var getMetadataURIFunction = contract.GetFunction("getMetadataURI");
-            
+
             // Convert merkle root to bytes32
             var merkleRootBytes = Convert.FromHexString(merkleRoot.StartsWith("0x") ? merkleRoot[2..] : merkleRoot);
 
             // Get metadata URI from blockchain
             var metadataUri = await getMetadataURIFunction.CallAsync<string>(merkleRootBytes);
-            
+
             // Retrieve the invoice data from IPFS
             var metadataUrl = $"https://coffee-mad-rooster-78.mypinata.cloud/ipfs/{metadataUri}";
             var httpClient = new HttpClient();
@@ -660,6 +660,7 @@ public class InvoiceService : BaseService, IInvoiceService
             invoice.TotalAmount = ipfsInvoice.InvoiceDetails?.TotalAmount ?? invoice.TotalAmount;
             invoice.Currency = ipfsInvoice.InvoiceDetails?.Currency ?? invoice.Currency;
             invoice.Note = ipfsInvoice.InvoiceDetails?.Note ?? invoice.Note;
+            invoice.Serial = ipfsInvoice.Serial ?? invoice.Serial;
 
             // Update invoice lines
             if (ipfsInvoice.Lines != null && ipfsInvoice.Lines.Any())
@@ -669,6 +670,9 @@ public class InvoiceService : BaseService, IInvoiceService
                 {
                     await _unitOfWork.Repository<InvoiceLine>().DeleteAsync(existingLine);
                 }
+
+                // Clear the collection to remove change tracking references
+                invoice.Lines.Clear();
 
                 // Add new lines from blockchain
                 foreach (var ipfsLine in ipfsInvoice.Lines)
