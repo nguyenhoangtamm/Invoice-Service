@@ -17,24 +17,24 @@ public class MappingProfile : AutoMapper.Profile
         // User to GetUserDto mapping with custom logic
         CreateMap<User, GetUserDto>()
             .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.UserName))
-            .ForMember(dest => dest.Fullname, opt => opt.MapFrom(src => string.Empty)) // No Profile, so empty
+            .ForMember(dest => dest.Fullname, opt => opt.MapFrom(src => src.FullName ?? string.Empty))
             .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role != null ? src.Role.Name : string.Empty));
 
         // User to GetAllUsersDto mapping
         CreateMap<User, GetAllUsersDto>()
             .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.UserName))
-            .ForMember(dest => dest.Fullname, opt => opt.MapFrom(src => string.Empty))
+            .ForMember(dest => dest.Fullname, opt => opt.MapFrom(src => src.FullName ?? string.Empty))
             .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role != null ? src.Role.Name : string.Empty));
 
         // User to GetUsersWithPaginationDto mapping
         CreateMap<User, GetUsersWithPaginationDto>()
             .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.UserName))
-            .ForMember(dest => dest.Fullname, opt => opt.MapFrom(src => string.Empty))
+            .ForMember(dest => dest.Fullname, opt => opt.MapFrom(src => src.FullName ?? string.Empty))
             .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role != null ? src.Role.Name : string.Empty));
 
         // User to UserDto mapping
         CreateMap<User, UserDto>()
-            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => string.Empty));
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName ?? string.Empty));
     }
 
     private void ApplyMappingsFromAssembly(Assembly assembly)

@@ -19,7 +19,6 @@ public class UserRepository : IUserRepository
     {
         return await _userManager.Users
             .Include(u => u.Role)
-            .Include(u => u.Profile)
             .FirstOrDefaultAsync(u => u.Id == id);
     }
 
@@ -27,7 +26,6 @@ public class UserRepository : IUserRepository
     {
         return await _userManager.Users
             .Include(u => u.Role)
-            .Include(u => u.Profile)
             .FirstOrDefaultAsync(u => u.UserName == username);
     }
 
@@ -35,7 +33,6 @@ public class UserRepository : IUserRepository
     {
         return await _userManager.Users
             .Include(u => u.Role)
-            .Include(u => u.Profile)
             .FirstOrDefaultAsync(u => u.Email == email);
     }
 
@@ -43,7 +40,6 @@ public class UserRepository : IUserRepository
     {
         return await _userManager.Users
             .Include(u => u.Role)
-            .Include(u => u.Profile)
             .Where(u => u.Status == UserStatus.Active)
             .ToListAsync();
     }
@@ -52,7 +48,6 @@ public class UserRepository : IUserRepository
     {
         return await _userManager.Users
             .Include(u => u.Role)
-            .Include(u => u.Profile)
             .Where(u => u.Status == UserStatus.Active)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)

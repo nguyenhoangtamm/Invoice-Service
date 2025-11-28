@@ -35,6 +35,13 @@ public static class DependencyInjection
         services.AddTransient<IInvoiceFileService, InvoiceFileService>();
         services.AddTransient<IInvoiceReportService, InvoiceReportService>();
 
+        // Email service
+        services.AddTransient<IEmailService, EmailService>();
+
+        // Register email settings
+        services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<EmailSettings>>().Value);
+
         // New services
         services.AddTransient<IOrganizationService, OrganizationService>();
         services.AddTransient<IApiKeyService, ApiKeyService>();

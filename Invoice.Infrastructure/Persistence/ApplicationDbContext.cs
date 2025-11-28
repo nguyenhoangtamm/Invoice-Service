@@ -13,13 +13,16 @@ public class ApplicationDbContext : IdentityDbContext<DomainEntities.User, Domai
     }
 
     // User Management - Users and Roles are provided by IdentityDbContext
-    public DbSet<DomainEntities.Profile> Profiles { get; set; }
+    // Profile has been merged into User entity
     public DbSet<DomainEntities.Menu> Menus { get; set; }
     public DbSet<DomainEntities.RoleMenu> RoleMenus { get; set; }
 
     // JWT Security
     public DbSet<DomainEntities.RefreshToken> RefreshTokens { get; set; }
     public DbSet<DomainEntities.TokenBlacklist> TokenBlacklists { get; set; }
+
+    // Password Reset
+    public DbSet<DomainEntities.PasswordResetToken> PasswordResetTokens { get; set; }
 
     // Domain entities
     public DbSet<DomainEntities.Invoice> Invoices { get; set; }
