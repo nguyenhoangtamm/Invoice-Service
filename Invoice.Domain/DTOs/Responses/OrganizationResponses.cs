@@ -12,7 +12,7 @@ public record OrganizationResponse : IMapFrom<Organization>
     public string? OrganizationPhone { get; init; }
     public string? OrganizationEmail { get; init; }
     public string? OrganizationBankAccount { get; init; }
-    public int UserId { get; init; }
+    public int? UserId { get; init; }
 }
 
 public record GetOrganizationsWithPaginationQuery

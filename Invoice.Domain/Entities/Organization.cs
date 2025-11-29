@@ -12,7 +12,7 @@ public class Organization : BaseAuditableEntity
     public string? OrganizationBankAccount { get; set; }
 
     // Owner (User)
-    public int UserId { get; set; }
+    public int? UserId { get; set; }
     public User? User { get; set; } = default!;
 
     // Navigation

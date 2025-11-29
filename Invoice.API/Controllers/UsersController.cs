@@ -43,8 +43,7 @@ public class UsersController(ILogger<UsersController> logger, IUserService userS
             {
                 Username = request.Username,
                 Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
+                FullName = request.FullName,
                 Gender = request.Gender,
                 RoleId = request.RoleId,
                 Status = request.Status,

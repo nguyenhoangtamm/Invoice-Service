@@ -57,12 +57,12 @@ public class UserService : BaseService, IUserService
                 RoleId = request.RoleId,
                 Status = UserStatus.Active,
                 EmailConfirmed = true,
-                FullName = $"{request.FirstName} {request.LastName}".Trim(),
+                FullName = request.FullName.Trim(),
                 Gender = request.Gender.ToString(),
                 BirthDate = DateTime.MinValue,
-                Address = string.Empty,
+                Address = request.Address,
                 Bio = string.Empty,
-                Phone = string.Empty,
+                Phone = request.Phone,
                 AvatarUrl = string.Empty,
                 PhoneNumber = request.Phone,
                 CreatedDate = DateTime.UtcNow,
@@ -128,11 +128,9 @@ public class UserService : BaseService, IUserService
                 user.Status = request.Status.Value;
 
             // Update profile fields if provided
-            if (!string.IsNullOrEmpty(request.FirstName) || !string.IsNullOrEmpty(request.LastName))
+            if (!string.IsNullOrEmpty(request.FullName))
             {
-                var firstName = request.FirstName ?? (user.FullName?.Split(' ').FirstOrDefault() ?? "");
-                var lastName = request.LastName ?? (user.FullName?.Split(' ').LastOrDefault() ?? "");
-                user.FullName = $"{firstName} {lastName}".Trim();
+                user.FullName = request.FullName.Trim();
             }
 
             if (request.Gender.HasValue)

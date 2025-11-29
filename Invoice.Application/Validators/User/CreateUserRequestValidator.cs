@@ -21,11 +21,7 @@ public class CreateUserRequestValidator : AbstractValidator<CreateUserRequest>
             .MinimumLength(6)
             .MaximumLength(100);
 
-        RuleFor(x => x.FirstName)
-            .NotEmpty()
-            .MaximumLength(50);
-
-        RuleFor(x => x.LastName)
+        RuleFor(x => x.FullName)
             .NotEmpty()
             .MaximumLength(50);
 

@@ -24,16 +24,9 @@ public class UpdateUserRequestValidator : AbstractValidator<UpdateUserRequest>
                 .MaximumLength(100);
         });
 
-        When(x => x.FirstName != null, () =>
+        When(x => x.FullName != null, () =>
         {
-            RuleFor(x => x.FirstName)
-                .NotEmpty()
-                .MaximumLength(50);
-        });
-
-        When(x => x.LastName != null, () =>
-        {
-            RuleFor(x => x.LastName)
+            RuleFor(x => x.FullName)
                 .NotEmpty()
                 .MaximumLength(50);
         });
