@@ -68,6 +68,8 @@ public class DashboardStatsResponse
     public int TotalCustomers { get; set; }
     public decimal AvgInvoiceValue { get; set; }
     public decimal MonthlyGrowth { get; set; }
+    public int PendingInvoices { get; set; }
+    public int TotalOrganizations { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }
