@@ -40,7 +40,7 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
 
     [HttpPost("create")]
     [DisableRequestSizeLimit]
-    public async Task<ActionResult<Result<int>>> Create([FromBody] CreateInvoiceRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<int>>> Create([FromForm] CreateInvoiceRequest request, IFormFileCollection files, CancellationToken cancellationToken)
     {
         try
         {
@@ -50,10 +50,36 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
             {
                 return Unauthorized(Result<List<OrganizationResponse>>.Failure("User not authenticated"));
             }
-            // Set the IssuedByUserId to the authenticated user's ID
-            request = request with { IssuedByUserId = userId };
 
-            return await _invoiceService.Create(request, cancellationToken);
+            // Upload files if provided
+            var attachmentFileIds = new List<int>();
+            if (files != null && files.Count > 0)
+            {
+                foreach (var file in files)
+                {
+                    if (file.Length > 0)
+                    {
+                        var uploadResult = await _fileService.UploadFileAsync(file, cancellationToken);
+                        if (uploadResult.Succeeded && uploadResult.Data != null)
+                        {
+                            attachmentFileIds.Add(uploadResult.Data.FileId);
+                        }
+                        else
+                        {
+                            LogWarning($"Failed to upload file: {file.FileName}");
+                        }
+                    }
+                }
+            }
+
+            // Set the IssuedByUserId to the authenticated user's ID
+            var createRequest = request with 
+            { 
+                IssuedByUserId = userId,
+                AttachmentFileIds = attachmentFileIds.Count > 0 ? attachmentFileIds : request.AttachmentFileIds
+            };
+
+            return await _invoiceService.Create(createRequest, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -67,7 +93,7 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
     [ApiKeyAuth]
     [AllowAnonymous] // Override the controller's Authorize attribute since we're using API key auth
     [DisableRequestSizeLimit]
-    public async Task<ActionResult<Result<int>>> UploadInvoice([FromBody] CreateInvoiceRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<int>>> UploadInvoice([FromForm] CreateInvoiceRequest request, IFormFileCollection files, CancellationToken cancellationToken)
     {
         try
         {
@@ -80,8 +106,33 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
                 return BadRequest(Result<int>.Failure("Invalid API key - organization not found"));
             }
 
+            // Upload files if provided
+            var attachmentFileIds = new List<int>();
+            if (files != null && files.Count > 0)
+            {
+                foreach (var file in files)
+                {
+                    if (file.Length > 0)
+                    {
+                        var uploadResult = await _fileService.UploadFileAsync(file, cancellationToken);
+                        if (uploadResult.Succeeded && uploadResult.Data != null)
+                        {
+                            attachmentFileIds.Add(uploadResult.Data.FileId);
+                        }
+                        else
+                        {
+                            LogWarning($"Failed to upload file: {file.FileName}");
+                        }
+                    }
+                }
+            }
+
             // Set the organization ID from the API key
-            var uploadRequest = request with { OrganizationId = organizationId.Value };
+            var uploadRequest = request with 
+            { 
+                OrganizationId = organizationId.Value,
+                AttachmentFileIds = attachmentFileIds.Count > 0 ? attachmentFileIds : request.AttachmentFileIds
+            };
 
             // Log API key usage
             LogInformation($"Invoice upload via API key for organization: {organizationId}");

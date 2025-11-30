@@ -10,6 +10,11 @@ public abstract class ApiControllerBase(ILogger<ApiControllerBase> logger) : Con
         logger.LogInformation(message);
     }
 
+    protected void LogWarning(string message)
+    {
+        logger.LogWarning(message);
+    }
+
     protected void LogError(string message, Exception ex)
     {
         logger.LogError(ex, message);
