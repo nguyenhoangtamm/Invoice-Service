@@ -160,6 +160,23 @@ public class InvoiceService : BaseService, IInvoiceService
             if (request.FormNumber != null) entity.FormNumber = request.FormNumber;
             if (request.Serial != null) entity.Serial = request.Serial;
             if (request.LookupCode != null) entity.LookupCode = request.LookupCode;
+            if (request.OrganizationId.HasValue) entity.OrganizationId = request.OrganizationId.Value;
+            if (request.IssuedByUserId.HasValue) entity.IssuedByUserId = request.IssuedByUserId;
+            
+            // Update seller info
+            if (request.SellerName != null) entity.SellerName = request.SellerName;
+            if (request.SellerTaxId != null) entity.SellerTaxId = request.SellerTaxId;
+            if (request.SellerAddress != null) entity.SellerAddress = request.SellerAddress;
+            if (request.SellerPhone != null) entity.SellerPhone = request.SellerPhone;
+            if (request.SellerEmail != null) entity.SellerEmail = request.SellerEmail;
+            
+            // Update customer info
+            if (request.CustomerName != null) entity.CustomerName = request.CustomerName;
+            if (request.CustomerTaxId != null) entity.CustomerTaxId = request.CustomerTaxId;
+            if (request.CustomerAddress != null) entity.CustomerAddress = request.CustomerAddress;
+            if (request.CustomerPhone != null) entity.CustomerPhone = request.CustomerPhone;
+            if (request.CustomerEmail != null) entity.CustomerEmail = request.CustomerEmail;
+            
             if (request.Status.HasValue) entity.Status = request.Status.Value;
             if (request.IssuedDate.HasValue) entity.IssuedDate = request.IssuedDate;
             if (request.SubTotal.HasValue) entity.SubTotal = request.SubTotal.Value;
@@ -169,6 +186,12 @@ public class InvoiceService : BaseService, IInvoiceService
             if (request.Currency != null) entity.Currency = request.Currency;
             if (request.Note != null) entity.Note = request.Note;
             if (request.BatchId.HasValue) entity.BatchId = request.BatchId;
+            
+            // Update blockchain-related fields
+            if (request.ImmutableHash != null) entity.ImmutableHash = request.ImmutableHash;
+            if (request.Cid != null) entity.Cid = request.Cid;
+            if (request.CidHash != null) entity.CidHash = request.CidHash;
+            if (request.MerkleProof != null) entity.MerkleProof = request.MerkleProof;
 
             entity.UpdatedDate = DateTime.UtcNow;
 
@@ -626,7 +649,7 @@ public class InvoiceService : BaseService, IInvoiceService
 
             var cidDetail = uriResponse.Cids.FirstOrDefault(c => c.InvoiceId == invoiceId);
             if (cidDetail == null)
-                return Result<InvoiceResponse>.Failure("Invoice not found in blockchain batch");
+                return Result<InvoiceResponse>. Failure("Invoice not found in blockchain batch");
 
             // Get the invoice data from IPFS
             var invoiceUrl = $"https://coffee-mad-rooster-78.mypinata.cloud/ipfs/{cidDetail.Cid}";
