@@ -40,7 +40,7 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
 
     [HttpPost("create")]
     [DisableRequestSizeLimit]
-    public async Task<ActionResult<Result<int>>> Create([FromForm] CreateInvoiceRequest request, IFormFileCollection files, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result<int>>> Create([FromBody] CreateInvoiceRequest request, CancellationToken cancellationToken)
     {
         try
         {
@@ -51,35 +51,9 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
                 return Unauthorized(Result<List<OrganizationResponse>>.Failure("User not authenticated"));
             }
 
-            // Upload files if provided
-            var attachmentFileIds = new List<int>();
-            if (files != null && files.Count > 0)
-            {
-                foreach (var file in files)
-                {
-                    if (file.Length > 0)
-                    {
-                        var uploadResult = await _fileService.UploadFileAsync(file, cancellationToken);
-                        if (uploadResult.Succeeded && uploadResult.Data != null)
-                        {
-                            attachmentFileIds.Add(uploadResult.Data.FileId);
-                        }
-                        else
-                        {
-                            LogWarning($"Failed to upload file: {file.FileName}");
-                        }
-                    }
-                }
-            }
+            request = request with { IssuedByUserId = userId };
 
-            // Set the IssuedByUserId to the authenticated user's ID
-            var createRequest = request with 
-            { 
-                IssuedByUserId = userId,
-                AttachmentFileIds = attachmentFileIds.Count > 0 ? attachmentFileIds : request.AttachmentFileIds
-            };
-
-            return await _invoiceService.Create(createRequest, cancellationToken);
+            return await _invoiceService.Create(request, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -128,8 +102,8 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
             }
 
             // Set the organization ID from the API key
-            var uploadRequest = request with 
-            { 
+            var uploadRequest = request with
+            {
                 OrganizationId = organizationId.Value,
                 AttachmentFileIds = attachmentFileIds.Count > 0 ? attachmentFileIds : request.AttachmentFileIds
             };
@@ -307,7 +281,7 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
             LogInformation($"Syncing invoice with ID: {invoiceId} from blockchain");
 
             var result = await _invoiceService.SyncInvoiceFromBlockchainAsync(invoiceId, cancellationToken);
-            
+
             if (result.Succeeded)
             {
                 return Ok(result);
@@ -365,7 +339,7 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
             LogInformation($"Downloading file with ID: {fileId}");
 
             var (success, filePath, fileName, contentType) = await _fileService.GetFileAsync(fileId, cancellationToken);
-            
+
             if (!success)
             {
                 return NotFound(Result<string>.Failure("File not found"));
