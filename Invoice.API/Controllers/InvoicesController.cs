@@ -153,7 +153,7 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
             return StatusCode(500, Result<int>.Failure("An error occurred while deleting the invoice"));
         }
     }
-
+    [AllowAnonymous]
     [HttpGet("get-by-id/{id}")]
     public async Task<ActionResult<Result<InvoiceResponse>>> GetById(int id, CancellationToken cancellationToken)
     {
