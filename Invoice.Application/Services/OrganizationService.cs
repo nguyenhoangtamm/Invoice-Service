@@ -157,7 +157,7 @@ public class OrganizationService : BaseService, IOrganizationService
             {
                 var kw = query.Keyword.ToLower();
                 organizationsQuery = organizationsQuery.Where(o => o.OrganizationName.ToLower().Contains(kw) ||
-                                        (o.OrganizationTaxId ?? string.Empty).ToLower().Contains(kw));
+                                        (o.OrganizationTaxId ?? string.Empty).ToLower().Contains(kw) || (o.OrganizationEmail ?? string.Empty).ToLower().Contains(kw));
             }
 
             return await organizationsQuery.OrderBy(x => x.CreatedDate)

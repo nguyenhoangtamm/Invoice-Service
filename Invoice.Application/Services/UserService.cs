@@ -229,10 +229,10 @@ public class UserService : BaseService, IUserService
     {
         try
         {
-            LogInformation($"Getting users with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+            LogInformation($"Getting users with pagination - Page: {query.PageNumber}, Size: {query.PageSize}, Keyword: {query.Keyword}, Status: {query.Status}");
 
-            var users = await _userRepository.GetPagedAsync(query.PageNumber, query.PageSize);
-            var totalCount = await _userRepository.GetCountAsync();
+            var users = await _userRepository.GetPagedWithFilterAsync(query.PageNumber, query.PageSize, query);
+            var totalCount = await _userRepository.GetCountWithFilterAsync(query);
 
             var usersDto = _mapper.Map<List<GetUsersWithPaginationDto>>(users);
 

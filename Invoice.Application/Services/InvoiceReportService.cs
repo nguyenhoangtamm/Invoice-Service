@@ -2,6 +2,7 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Invoice.Application.Extensions;
 using Invoice.Application.Interfaces;
+using Invoice.Application.Utilities;
 using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Entities;
@@ -80,10 +81,10 @@ public class InvoiceReportService : BaseService, IInvoiceReportService
 
             if (request.Reason.HasValue)
                 entity.Reason = request.Reason.Value;
-            
+
             if (request.Description != null)
                 entity.Description = request.Description;
-            
+
             if (request.Status.HasValue)
                 entity.Status = request.Status.Value;
 
@@ -168,7 +169,7 @@ public class InvoiceReportService : BaseService, IInvoiceReportService
     {
         try
         {
-            LogInformation($"Getting invoice reports with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+            LogInformation($"Getting invoice reports with pagination - Page: {query.PageNumber}, Size: {query.PageSize}, StartDate: {query.StartDate}, EndDate: {query.EndDate}");
 
             var reportsQuery = _unitOfWork.Repository<InvoiceReport>()
                 .Entities
@@ -188,6 +189,24 @@ public class InvoiceReportService : BaseService, IInvoiceReportService
             if (query.Reason.HasValue)
                 reportsQuery = reportsQuery.Where(r => r.Reason == query.Reason.Value);
 
+            if (!string.IsNullOrEmpty(query.Keyword))
+            {
+                reportsQuery = reportsQuery.Where(r =>
+                    r.Description != null && r.Description.Contains(query.Keyword));
+            }
+
+            // Apply date range filter using utility
+            if (DateTimeUtility.TryParseToUtc(query.StartDate, out var startDateUtc))
+            {
+                reportsQuery = reportsQuery.Where(r => r.CreatedDate >= startDateUtc);
+            }
+
+            if (DateTimeUtility.TryParseToUtc(query.EndDate, out var endDateUtc))
+            {
+                var endDateInclusive = DateTimeUtility.GetEndOfDayUtc(endDateUtc);
+                reportsQuery = reportsQuery.Where(r => r.CreatedDate <= endDateInclusive);
+            }
+
             return await reportsQuery
                 .OrderByDescending(x => x.CreatedDate)
                 .ThenByDescending(x => x.Id)
@@ -205,7 +224,7 @@ public class InvoiceReportService : BaseService, IInvoiceReportService
     {
         try
         {
-            LogInformation($"Getting invoice reports by user {query.UserId} with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+            LogInformation($"Getting invoice reports by user {query.UserId} with pagination - Page: {query.PageNumber}, Size: {query.PageSize}, StartDate: {query.StartDate}, EndDate: {query.EndDate}");
 
             var reportsQuery = _unitOfWork.Repository<InvoiceReport>()
                 .Entities
@@ -215,6 +234,18 @@ public class InvoiceReportService : BaseService, IInvoiceReportService
 
             if (query.Status.HasValue)
                 reportsQuery = reportsQuery.Where(r => r.Status == query.Status.Value);
+
+            // Apply date range filter using utility
+            if (DateTimeUtility.TryParseToUtc(query.StartDate, out var startDateUtc))
+            {
+                reportsQuery = reportsQuery.Where(r => r.CreatedDate >= startDateUtc);
+            }
+
+            if (DateTimeUtility.TryParseToUtc(query.EndDate, out var endDateUtc))
+            {
+                var endDateInclusive = DateTimeUtility.GetEndOfDayUtc(endDateUtc);
+                reportsQuery = reportsQuery.Where(r => r.CreatedDate <= endDateInclusive);
+            }
 
             return await reportsQuery
                 .OrderByDescending(x => x.CreatedDate)

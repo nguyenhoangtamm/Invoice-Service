@@ -2,6 +2,7 @@
 using AutoMapper.QueryableExtensions;
 using Invoice.Application.Extensions;
 using Invoice.Application.Interfaces;
+using Invoice.Application.Utilities;
 using Invoice.Domain.Configurations;
 using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.DTOs.Responses;
@@ -248,6 +249,26 @@ public class InvoiceService : BaseService, IInvoiceService
             return Result<InvoiceResponse>.Failure("Failed to get invoice");
         }
     }
+    public async Task<Result<InvoiceResponse>> GetByLookupCode(string lookupCode, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var entity = await _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
+                .AsNoTracking()
+                .Include(i => i.Lines)
+                .Include(i => i.Attachments)
+                .FirstOrDefaultAsync(i => i.LookupCode == lookupCode, cancellationToken);
+            if (entity == null) return Result<InvoiceResponse>.Failure("Invoice not found");
+
+            var response = _mapper.Map<InvoiceResponse>(entity);
+            return Result<InvoiceResponse>.Success(response, "Invoice retrieved");
+        }
+        catch (Exception ex)
+        {
+            LogError("Error getting invoice", ex);
+            return Result<InvoiceResponse>.Failure("Failed to get invoice");
+        }
+    }
 
     public async Task<Result<List<InvoiceResponse>>> GetAll(CancellationToken cancellationToken)
     {
@@ -272,7 +293,7 @@ public class InvoiceService : BaseService, IInvoiceService
     {
         try
         {
-            LogInformation($"Getting invoices with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+            LogInformation($"Getting invoices with pagination - Page: {query.PageNumber}, Size: {query.PageSize}, StartDate: {query.StartDate}, EndDate: {query.EndDate}");
 
             var invoicesQuery = _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
                 .AsNoTracking()
@@ -289,9 +310,31 @@ public class InvoiceService : BaseService, IInvoiceService
                 invoicesQuery = invoicesQuery.Where(i => i.InvoiceNumber.ToLower().Contains(k) ||
                                                          (i.CustomerName != null && i.CustomerName.ToLower().Contains(k)));
             }
+
             if (query.Status.HasValue)
             {
                 invoicesQuery = invoicesQuery.Where(i => i.Status == query.Status.Value);
+            }
+
+            // Apply date range filter
+            if (!string.IsNullOrWhiteSpace(query.StartDate) && DateTime.TryParse(query.StartDate, out var startDate))
+            {
+                // Ensure UTC datetime for PostgreSQL compatibility
+                var startDateUtc = startDate.Kind == DateTimeKind.Local 
+                    ? startDate.ToUniversalTime() 
+                    : startDate;
+                invoicesQuery = invoicesQuery.Where(i => i.IssuedDate >= startDateUtc);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.EndDate) && DateTime.TryParse(query.EndDate, out var endDate))
+            {
+                // Ensure UTC datetime for PostgreSQL compatibility
+                var endDateUtc = endDate.Kind == DateTimeKind.Local 
+                    ? endDate.ToUniversalTime() 
+                    : endDate;
+                // Set end date to end of day to include all records on that date
+                var endDateInclusive = endDateUtc.AddDays(1).AddTicks(-1);
+                invoicesQuery = invoicesQuery.Where(i => i.IssuedDate <= endDateInclusive);
             }
 
             return await invoicesQuery.OrderByDescending(x => x.IssuedDate)
@@ -310,7 +353,7 @@ public class InvoiceService : BaseService, IInvoiceService
     {
         try
         {
-            LogInformation($"Getting invoices by user {query.UserId} with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+            LogInformation($"Getting invoices by user {query.UserId} with pagination - Page: {query.PageNumber}, Size: {query.PageSize}, StartDate: {query.StartDate}, EndDate: {query.EndDate}");
 
             var invoicesQuery = _unitOfWork.Repository<Invoice.Domain.Entities.Invoice>().Entities
                 .AsNoTracking()
@@ -327,10 +370,24 @@ public class InvoiceService : BaseService, IInvoiceService
                 invoicesQuery = invoicesQuery.Where(i => i.InvoiceNumber.ToLower().Contains(k) ||
                                                          (i.CustomerName != null && i.CustomerName.ToLower().Contains(k)));
             }
+
             if (query.Status.HasValue)
             {
                 invoicesQuery = invoicesQuery.Where(i => i.Status == query.Status.Value);
             }
+
+            // Apply date range filter using utility
+            if (DateTimeUtility.TryParseToUtc(query.StartDate, out var startDateUtc))
+            {
+                invoicesQuery = invoicesQuery.Where(i => i.IssuedDate >= startDateUtc);
+            }
+
+            if (DateTimeUtility.TryParseToUtc(query.EndDate, out var endDateUtc))
+            {
+                var endDateInclusive = DateTimeUtility.GetEndOfDayUtc(endDateUtc);
+                invoicesQuery = invoicesQuery.Where(i => i.IssuedDate <= endDateInclusive);
+            }
+
             return await invoicesQuery.OrderByDescending(x => x.IssuedDate)
                 .ThenByDescending(x => x.Id)
                 .ProjectTo<InvoiceResponse>(_mapper.ConfigurationProvider)
@@ -663,20 +720,29 @@ public class InvoiceService : BaseService, IInvoiceService
             if (ipfsInvoice == null)
                 return Result<InvoiceResponse>.Failure("Failed to retrieve on-chain invoice data");
 
-            // Update the database with blockchain data
+            // Update the database with blockchain data - Include all fields for completeness
+            
+            // Basic invoice information
+            invoice.InvoiceNumber = ipfsInvoice.InvoiceNumber ?? invoice.InvoiceNumber;
+            invoice.FormNumber = ipfsInvoice.FormNumber ?? invoice.FormNumber;
+            invoice.Serial = ipfsInvoice.Serial ?? invoice.Serial;
+            invoice.LookupCode = ipfsInvoice.LookupCode ?? invoice.LookupCode;
+            
+            // Seller information
             invoice.SellerName = ipfsInvoice.SellerInfo?.SellerName ?? invoice.SellerName;
             invoice.SellerTaxId = ipfsInvoice.SellerInfo?.SellerTaxId ?? invoice.SellerTaxId;
             invoice.SellerAddress = ipfsInvoice.SellerInfo?.SellerAddress ?? invoice.SellerAddress;
             invoice.SellerPhone = ipfsInvoice.SellerInfo?.SellerPhone ?? invoice.SellerPhone;
             invoice.SellerEmail = ipfsInvoice.SellerInfo?.SellerEmail ?? invoice.SellerEmail;
-            invoice.LookupCode = ipfsInvoice.LookupCode ?? invoice.LookupCode;
 
+            // Customer information
             invoice.CustomerName = ipfsInvoice.CustomerInfo?.CustomerName ?? invoice.CustomerName;
             invoice.CustomerTaxId = ipfsInvoice.CustomerInfo?.CustomerTaxId ?? invoice.CustomerTaxId;
             invoice.CustomerAddress = ipfsInvoice.CustomerInfo?.CustomerAddress ?? invoice.CustomerAddress;
             invoice.CustomerPhone = ipfsInvoice.CustomerInfo?.CustomerPhone ?? invoice.CustomerPhone;
             invoice.CustomerEmail = ipfsInvoice.CustomerInfo?.CustomerEmail ?? invoice.CustomerEmail;
 
+            // Invoice financial details
             invoice.IssuedDate = ipfsInvoice.InvoiceDetails?.IssueDate ?? invoice.IssuedDate;
             invoice.SubTotal = ipfsInvoice.InvoiceDetails?.SubTotal ?? invoice.SubTotal;
             invoice.TaxAmount = ipfsInvoice.InvoiceDetails?.TaxAmount ?? invoice.TaxAmount;
@@ -684,7 +750,10 @@ public class InvoiceService : BaseService, IInvoiceService
             invoice.TotalAmount = ipfsInvoice.InvoiceDetails?.TotalAmount ?? invoice.TotalAmount;
             invoice.Currency = ipfsInvoice.InvoiceDetails?.Currency ?? invoice.Currency;
             invoice.Note = ipfsInvoice.InvoiceDetails?.Note ?? invoice.Note;
-            invoice.Serial = ipfsInvoice.Serial ?? invoice.Serial;
+
+            // Update blockchain-related fields (from CID metadata)
+            invoice.Cid = cidDetail.Cid ?? invoice.Cid;
+            // Note: MerkleProof and other blockchain fields remain unchanged as they come from the batch
 
             // Update invoice lines
             if (ipfsInvoice.Lines != null && ipfsInvoice.Lines.Any())
@@ -725,7 +794,7 @@ public class InvoiceService : BaseService, IInvoiceService
             await _unitOfWork.Save(cancellationToken);
 
             var resultResponse = _mapper.Map<InvoiceResponse>(invoice);
-            LogInformation($"Invoice {invoiceId} synced successfully from blockchain");
+            LogInformation($"Invoice {invoiceId} synced successfully from blockchain - Updated {(ipfsInvoice.Lines?.Count ?? 0)} line items");
             return Result<InvoiceResponse>.Success(resultResponse, "Invoice synced successfully from blockchain");
         }
         catch (Exception ex)

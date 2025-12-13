@@ -14,7 +14,7 @@ public class GetRolesWithPaginationQueryValidator : AbstractValidator<GetRolesWi
             .GreaterThan(0)
             .LessThanOrEqualTo(100);
 
-        RuleFor(x => x.SearchTerm)
+        RuleFor(x => x.KeyWord)
             .MaximumLength(100);
     }
 }

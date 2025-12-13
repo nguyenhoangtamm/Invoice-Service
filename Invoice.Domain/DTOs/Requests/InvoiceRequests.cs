@@ -118,6 +118,8 @@ public record GetInvoiceWithPagination
     public string? Keyword { get; set; }
     public int? OrganizationId { get; set; }
     public InvoiceStatus? Status { get; set; }
+    public string? StartDate { get; set; }
+    public string? EndDate { get; set; }
 }
 public record GetInvoiceLookUpWithPagination
 {
@@ -137,6 +139,8 @@ public record GetInvoiceByUserWithPagination
     public int UserId { get; set; }
     public int? OrganizationId { get; set; }
     public InvoiceStatus? Status { get; set; }
+    public string? StartDate { get; set; }
+    public string? EndDate { get; set; }
 }
 
 // --- Merged action requests ---

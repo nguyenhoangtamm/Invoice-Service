@@ -195,13 +195,25 @@ public class RoleService : BaseService, IRoleService
     {
         try
         {
-            LogInformation($"Getting roles with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+            LogInformation($"Getting roles with pagination - Page: {query.PageNumber}, Size: {query.PageSize}, KeyWord: {query.KeyWord}");
 
-            var roles = await _roleManager.Roles
+            var rolesQuery = _roleManager.Roles.AsQueryable();
+
+            // Apply search filter
+            if (!string.IsNullOrWhiteSpace(query.KeyWord))
+            {
+                var searchTerm = query.KeyWord.Trim().ToLower();
+                rolesQuery = rolesQuery.Where(r =>
+                    r.Name.ToLower().Contains(searchTerm) ||
+                    r.Description.ToLower().Contains(searchTerm));
+            }
+
+            var totalCount = await rolesQuery.CountAsync(cancellationToken);
+
+            var roles = await rolesQuery
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .ToListAsync(cancellationToken);
-            var totalCount = await _roleManager.Roles.CountAsync(cancellationToken);
 
             var rolesDto = _mapper.Map<List<GetRolesWithPaginationDto>>(roles);
 

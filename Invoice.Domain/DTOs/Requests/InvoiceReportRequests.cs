@@ -19,12 +19,15 @@ public record UpdateInvoiceReportRequest
 
 public record GetInvoiceReportWithPagination
 {
+    public string? Keyword { get; set; }
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;
     public int? InvoiceId { get; set; }
     public int? ReportedByUserId { get; set; }
     public InvoiceReportStatus? Status { get; set; }
     public InvoiceReportReason? Reason { get; set; }
+    public string? StartDate { get; set; }
+    public string? EndDate { get; set; }
 }
 
 public record GetInvoiceReportByUserWithPagination
@@ -33,4 +36,6 @@ public record GetInvoiceReportByUserWithPagination
     public int PageSize { get; set; } = 10;
     public int UserId { get; set; }
     public InvoiceReportStatus? Status { get; set; }
+    public string? StartDate { get; set; }
+    public string? EndDate { get; set; }
 }

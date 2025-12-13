@@ -1,4 +1,5 @@
 using Invoice.Application.Interfaces;
+using Invoice.Domain.DTOs.Requests;
 using Invoice.Domain.Entities;
 using Invoice.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
@@ -59,6 +60,63 @@ public class UserRepository : IUserRepository
         return await _userManager.Users
             .Where(u => u.Status == UserStatus.Active)
             .CountAsync();
+    }
+
+    public async Task<List<User>> GetPagedWithFilterAsync(int pageNumber, int pageSize, GetUsersWithPaginationQuery query)
+    {
+        var queryable = _userManager.Users.Include(u => u.Role).AsQueryable();
+
+        // Apply status filter
+        if (query.Status.HasValue)
+        {
+            queryable = queryable.Where(u => u.Status == query.Status.Value);
+        }
+        else
+        {
+            queryable = queryable.Where(u => u.Status == UserStatus.Active);
+        }
+
+        // Apply keyword filter (search in username, email, and fullname)
+        if (!string.IsNullOrWhiteSpace(query.Keyword))
+        {
+            var keyword = query.Keyword.Trim().ToLower();
+            queryable = queryable.Where(u =>
+                u.UserName.ToLower().Contains(keyword) ||
+                u.Email.ToLower().Contains(keyword) ||
+                u.FullName.ToLower().Contains(keyword));
+        }
+
+        return await queryable
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<int> GetCountWithFilterAsync(GetUsersWithPaginationQuery query)
+    {
+        var queryable = _userManager.Users.AsQueryable();
+
+        // Apply status filter
+        if (query.Status.HasValue)
+        {
+            queryable = queryable.Where(u => u.Status == query.Status.Value);
+        }
+        else
+        {
+            queryable = queryable.Where(u => u.Status == UserStatus.Active);
+        }
+
+        // Apply keyword filter (search in username, email, and fullname)
+        if (!string.IsNullOrWhiteSpace(query.Keyword))
+        {
+            var keyword = query.Keyword.Trim().ToLower();
+            queryable = queryable.Where(u =>
+                u.UserName.ToLower().Contains(keyword) ||
+                u.Email.ToLower().Contains(keyword) ||
+                u.FullName.ToLower().Contains(keyword));
+        }
+
+        return await queryable.CountAsync();
     }
 
     public async Task<User> CreateAsync(User user, string password)

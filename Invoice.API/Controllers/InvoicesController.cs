@@ -177,6 +177,30 @@ public class InvoicesController(ILogger<InvoicesController> logger, IInvoiceServ
         }
     }
 
+    [AllowAnonymous]
+    [HttpGet("get-by-lookup-code/{lookupCode}")]
+    public async Task<ActionResult<Result<InvoiceResponse>>> GetByLookupCode(string lookupCode, CancellationToken cancellationToken)
+    {
+        try
+        {
+            LogInformation($"Getting invoice with Lookup Code: {lookupCode}");
+
+            var result = await _invoiceService.GetByLookupCode(lookupCode, cancellationToken);
+
+            if (result.Succeeded)
+            {
+                return Ok(result);
+            }
+
+            return NotFound(result);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error getting invoice with ID: {lookupCode}", ex);
+            return StatusCode(500, Result<InvoiceResponse>.Failure("An error occurred while retrieving the invoice"));
+        }
+    }
+
     [HttpGet]
     [Route("get-all")]
     public async Task<ActionResult<Result<List<InvoiceResponse>>>> GetAll(CancellationToken cancellationToken = default)
