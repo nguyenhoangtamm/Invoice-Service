@@ -29,7 +29,7 @@ services:
             GoogleDriveSettings__CredentialFilePath: ${GOOGLE_DRIVE_CREDENTIALS_PATH}
             GoogleDriveSettings__FolderId: ${GOOGLE_DRIVE_FOLDER_ID}
         ports:
-            - "${API_PORT}:80"
+            - "${APP_PORT}:80"
         volumes:
             - ./Invoice.API/wwwroot:/app/wwwroot
             - ./logs:/app/logs
