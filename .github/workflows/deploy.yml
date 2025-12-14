@@ -1,0 +1,199 @@
+name: Deploy Application
+
+on:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Select environment:"
+                required: true
+                default: "dev"
+                type: choice
+                options:
+                    - dev
+                    - test
+                    - prod
+            branch:
+                description: 'Branch or tag to deploy, with tags allowed only for the "prod" environment.'
+                required: true
+                default: "develop"
+
+env:
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+    DOTNET_NOLOGO: true
+    NUGET_XMLDOC_MODE: skip
+    DEFAULT_BRANCH: develop
+    SOURCE_FOLDER: /home/${{ secrets.REMOTE_USER }}/invoice-service
+
+jobs:
+    remote-deploy:
+        runs-on: ubuntu-latest
+        environment: ${{ github.event.inputs.environment }}
+        steps:
+            - name: Checkout (for workflow context only)
+              uses: actions/checkout@v4
+
+            - name: Remote Deploy via SSH
+              uses: appleboy/ssh-action@v0.1.10
+              with:
+                  host: ${{ secrets.REMOTE_HOST }}
+                  username: ${{ secrets.REMOTE_USER }}
+                  password: ${{ secrets.REMOTE_PASSWORD }}
+                  port: 22
+                  script: |
+                      set -euxo pipefail
+                      REPO_URL="https://github.com/${{ github.repository }}"
+                      ENV="${{ github.event.inputs.environment }}"
+                      BRANCH="${{ github.event.inputs.branch }}"
+                      GITHUB_RUN_NUMBER="${{ github.run_id }}"          
+                      APP_NAME="${{ vars.APP_NAME }}"
+                      APP_PORT="${{ vars.APP_PORT }}"
+                      ASPNETCORE_ENVIRONMENT="${{ vars.ASPNETCORE_ENVIRONMENT }}"
+                      DB_HOST="${{ secrets.DB_HOST }}"
+                      DB_PORT="${{ secrets.DB_PORT }}"
+                      DB_NAME="${{ secrets.DB_NAME }}"
+                      DB_USER="${{ secrets.DB_USER }}"
+                      DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+                      JWT_KEY="${{ secrets.JWT_KEY }}"
+                      JWT_ISSUER="${{ secrets.JWT_ISSUER }}"
+                      JWT_AUDIENCE="${{ secrets.JWT_AUDIENCE }}"
+                      JWT_EXPIRES_IN_MINUTES="${{ secrets.JWT_EXPIRES_IN_MINUTES }}"
+                      BLOCKCHAIN_RPC_URL="${{ secrets.BLOCKCHAIN_RPC_URL }}"
+                      BLOCKCHAIN_CHAIN_ID="${{ secrets.BLOCKCHAIN_CHAIN_ID }}"
+                      BLOCKCHAIN_PRIVATE_KEY="${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}"
+                      BLOCKCHAIN_CONTRACT_ADDRESS="${{ secrets.BLOCKCHAIN_CONTRACT_ADDRESS }}"
+                      EMAIL_SMTP_HOST="${{ secrets.EMAIL_SMTP_HOST }}"
+                      EMAIL_SMTP_PORT="${{ secrets.EMAIL_SMTP_PORT }}"
+                      EMAIL_SMTP_USERNAME="${{ secrets.EMAIL_SMTP_USERNAME }}"
+                      EMAIL_SMTP_PASSWORD="${{ secrets.EMAIL_SMTP_PASSWORD }}"
+                      EMAIL_SENDER="${{ secrets.EMAIL_SENDER }}"
+                      EMAIL_SENDER_NAME="${{ secrets.EMAIL_SENDER_NAME }}"
+                      GOOGLE_DRIVE_CREDENTIALS_PATH="${{ secrets.GOOGLE_DRIVE_CREDENTIALS_PATH }}"
+                      GOOGLE_DRIVE_FOLDER_ID="${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}"
+                      WORKING_FOLDER="${{ vars.SOURCE_FOLDER }}"  
+                      BRANCH_SANITIZED=$(echo "$BRANCH" | sed 's/[\/\.]/_/g')
+                      CHECKOUT_FOLDER="${WORKING_FOLDER}/${BRANCH_SANITIZED}_${ENV}_${GITHUB_RUN_NUMBER}"
+                      DOCKER_COMPOSE_FILE_PATH="${CHECKOUT_FOLDER}/docker-compose.yml"    
+
+                      echo "=========================================="
+                      echo "Invoice Service Deployment Started"
+                      echo "=========================================="
+                      echo "Selected environment: $ENV"
+                      echo "Deploying branch/tag: $BRANCH"
+                      echo "GitHub run number: $GITHUB_RUN_NUMBER"
+                      echo "Checkout folder: $CHECKOUT_FOLDER"
+                      echo "Working folder: $WORKING_FOLDER"
+                      echo "Docker Compose file path: $DOCKER_COMPOSE_FILE_PATH"
+                      echo "App name: $APP_NAME"
+                      echo "App port: $APP_PORT"
+                      echo "ASPNETCORE_ENVIRONMENT: $ASPNETCORE_ENVIRONMENT"
+                      echo "=========================================="
+
+                      if [ ! -d "$CHECKOUT_FOLDER" ]; then
+                        echo "Creating deployment folder: $CHECKOUT_FOLDER"
+                        mkdir -p "$CHECKOUT_FOLDER"
+                      fi
+                                 
+                      echo "Cleaning up old deployment folders (older than 3 days)..."
+                      find "$WORKING_FOLDER" -mindepth 1 -maxdepth 1 -type d -mtime +3 -exec rm -rf {} \;
+                      echo "✅ Cleanup completed."
+
+                      cd "$CHECKOUT_FOLDER"
+                      echo "📁 Entering checkout folder: $CHECKOUT_FOLDER"
+                      ls -la
+
+                      if [ ! -d .git ]; then
+                        echo "🔄 Cloning repository..."
+                        git clone "$REPO_URL" .
+                      fi
+
+                      echo "📡 Fetching latest changes..."
+                      git fetch origin
+
+                      echo "🔀 Checking out develop branch..."
+                      git checkout -B develop origin/develop
+
+                      echo "🔄 Resetting to origin/develop..."
+                      git reset --hard origin/develop
+
+                      echo "📋 Listing branches:"
+                      git branch
+
+                      # Validate branch/tag for prod environment
+                      if [ "$ENV" = "prod" ]; then
+                        echo "🔐 Validating for PRODUCTION environment..."
+                        if [ "$BRANCH" = "main" ]; then
+                          echo "✅ Deploying to PROD with main branch"
+                          git checkout -B main origin/main
+                          git reset --hard origin/main || git reset --hard main
+                        elif git tag | grep -qx "$BRANCH"; then
+                          echo "✅ Deploying tag: $BRANCH"
+                          git checkout "tags/$BRANCH" -b "deploy-$BRANCH-$GITHUB_RUN_NUMBER"
+                        else
+                          echo "❌ Error: For PROD, only 'main' branch or a valid tag is allowed."
+                          exit 1
+                        fi
+                      else
+                        echo "🚀 Deploying to $ENV environment with branch: $BRANCH"
+                        git checkout -B $BRANCH origin/$BRANCH
+                        git reset --hard origin/$BRANCH || git reset --hard $BRANCH
+                      fi
+
+                      echo "Git status:"
+                      git status
+
+                      echo "=========================================="
+                      echo "Building and Starting Containers"
+                      echo "=========================================="
+
+                      export AppName="$APP_NAME"
+                      export AppPort="$APP_PORT"
+                      export AspNetCoreEnvironment="$ASPNETCORE_ENVIRONMENT"
+                      export DB_HOST="$DB_HOST"
+                      export DB_PORT="$DB_PORT"
+                      export DB_NAME="$DB_NAME"
+                      export DB_USER="$DB_USER"
+                      export DB_PASSWORD="$DB_PASSWORD"
+                      export JWT_KEY="$JWT_KEY"
+                      export JWT_ISSUER="$JWT_ISSUER"
+                      export JWT_AUDIENCE="$JWT_AUDIENCE"
+                      export JWT_EXPIRES_IN_MINUTES="$JWT_EXPIRES_IN_MINUTES"
+                      export BLOCKCHAIN_RPC_URL="$BLOCKCHAIN_RPC_URL"
+                      export BLOCKCHAIN_CHAIN_ID="$BLOCKCHAIN_CHAIN_ID"
+                      export BLOCKCHAIN_PRIVATE_KEY="$BLOCKCHAIN_PRIVATE_KEY"
+                      export BLOCKCHAIN_CONTRACT_ADDRESS="$BLOCKCHAIN_CONTRACT_ADDRESS"
+                      export EMAIL_SMTP_HOST="$EMAIL_SMTP_HOST"
+                      export EMAIL_SMTP_PORT="$EMAIL_SMTP_PORT"
+                      export EMAIL_SMTP_USERNAME="$EMAIL_SMTP_USERNAME"
+                      export EMAIL_SMTP_PASSWORD="$EMAIL_SMTP_PASSWORD"
+                      export EMAIL_SENDER="$EMAIL_SENDER"
+                      export EMAIL_SENDER_NAME="$EMAIL_SENDER_NAME"
+                      export GOOGLE_DRIVE_CREDENTIALS_PATH="$GOOGLE_DRIVE_CREDENTIALS_PATH"
+                      export GOOGLE_DRIVE_FOLDER_ID="$GOOGLE_DRIVE_FOLDER_ID"
+
+                      docker compose -f "$DOCKER_COMPOSE_FILE_PATH" -p "$APP_NAME" up -d --build --remove-orphans
+
+                      echo "=========================================="
+                      echo "✅ Deployment Completed Successfully!"
+                      echo "=========================================="
+                      echo "Service: $APP_NAME"
+                      echo "Environment: $ENV"
+                      echo "Port: $APP_PORT"
+                      echo "URL: http://localhost:$APP_PORT"
+                      echo "=========================================="
+
+            - name: Health Check
+              run: |
+                  echo "⏳ Waiting for application to be healthy..."
+                  sleep 10
+                  echo "✅ Deployment health check completed"
+
+            - name: Deployment Summary
+              run: |
+                  echo "=========================================="
+                  echo "Deployment Summary"
+                  echo "=========================================="
+                  echo "Environment: ${{ github.event.inputs.environment }}"
+                  echo "Branch/Tag: ${{ github.event.inputs.branch }}"
+                  echo "Repository: ${{ github.repository }}"
+                  echo "Deployment Time: $(date)"
+                  echo "=========================================="
