@@ -7,7 +7,6 @@ services:
             context: .
             dockerfile: Invoice.API/Dockerfile
         container_name: invoice-api-prod
-        env_file: .env
         environment:
             ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
             ASPNETCORE_URLS: http://+:80
