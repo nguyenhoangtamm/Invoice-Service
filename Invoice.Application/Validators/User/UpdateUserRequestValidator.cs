@@ -8,8 +8,6 @@ public class UpdateUserRequestValidator : AbstractValidator<UpdateUserRequest>
 {
     public UpdateUserRequestValidator()
     {
-        RuleFor(x => x.Id)
-            .GreaterThan(0);
 
         When(x => x.Username != null, () =>
         {
@@ -26,24 +24,9 @@ public class UpdateUserRequestValidator : AbstractValidator<UpdateUserRequest>
                 .MaximumLength(100);
         });
 
-        When(x => x.Password != null, () =>
+        When(x => x.FullName != null, () =>
         {
-            RuleFor(x => x.Password)
-                .NotEmpty()
-                .MinimumLength(6)
-                .MaximumLength(100);
-        });
-
-        When(x => x.FirstName != null, () =>
-        {
-            RuleFor(x => x.FirstName)
-                .NotEmpty()
-                .MaximumLength(50);
-        });
-
-        When(x => x.LastName != null, () =>
-        {
-            RuleFor(x => x.LastName)
+            RuleFor(x => x.FullName)
                 .NotEmpty()
                 .MaximumLength(50);
         });

@@ -8,8 +8,8 @@ public class BaseAuditableEntityConfiguration<T> : IEntityTypeConfiguration<T> w
 {
     public void Configure(EntityTypeBuilder<T> builder)
     {
-        builder.Property(e => e.CreatedBy).HasMaxLength(100);
-        builder.Property(e => e.UpdatedBy).HasMaxLength(100);
+        builder.Property(e => e.CreatedBy);
+        builder.Property(e => e.UpdatedBy);
         builder.Property(e => e.IsDeleted).HasDefaultValue(false);
 
         // Optionally configure auditing timestamps as required

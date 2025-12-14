@@ -1,10 +1,13 @@
-using System.Reflection;
 using FluentValidation;
 using Invoice.Application.Services;
+using Invoice.Domain.Common.Mappings;
+using Invoice.Domain.Configurations;
 using Invoice.Domain.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Invoice.Domain.Common.Mappings;
+using Microsoft.Extensions.Options;
+using Nethereum.Web3;
+using System.Reflection;
 
 namespace Invoice.Application;
 
@@ -23,9 +26,45 @@ public static class DependencyInjection
         services.AddTransient<IAuthService, AuthService>();
         services.AddTransient<IRoleService, RoleService>();
         services.AddTransient<IMenuService, MenuService>();
+        services.AddTransient<IOrganizationService, OrganizationService>();
+        services.AddTransient<IInvoiceService, InvoiceService>();
+        services.AddTransient<IInvoiceLineService, InvoiceLineService>();
+        services.AddTransient<IInvoiceBatchService, InvoiceBatchService>();
+        services.AddTransient<IApiKeyService, ApiKeyService>();
+        services.AddTransient<IDashboardService, DashboardService>();
+        services.AddTransient<IInvoiceFileService, InvoiceFileService>();
+        services.AddTransient<IInvoiceReportService, InvoiceReportService>();
+
+        // Email service
+        services.AddTransient<IEmailService, EmailService>();
+
+        // Register email settings
+        services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<EmailSettings>>().Value);
+
+        // New services
+        services.AddTransient<IOrganizationService, OrganizationService>();
+        services.AddTransient<IApiKeyService, ApiKeyService>();
+        services.AddTransient<IInvoiceBatchService, InvoiceBatchService>();
+        services.AddTransient<IInvoiceService, InvoiceService>();
+        services.AddTransient<IInvoiceLineService, InvoiceLineService>();
 
         // Register FluentValidation validators from this assembly
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+
+        // Additional configuration
+        services.Configure<BlockchainConfiguration>(
+           configuration.GetSection(BlockchainConfiguration.SectionName));
+
+        // Register BlockchainConfiguration as singleton
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<BlockchainConfiguration>>().Value);
+
+        // Register IWeb3
+        services.AddSingleton<IWeb3>(sp =>
+        {
+            var blockchainConfig = sp.GetRequiredService<IOptions<BlockchainConfiguration>>().Value;
+            return new Web3(blockchainConfig.RpcUrl);
+        });
 
         return services;
     }

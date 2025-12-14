@@ -11,7 +11,6 @@ using Invoice.Domain.Shares;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using ProfileEntity = Invoice.Domain.Entities.Profile;
 
 namespace Invoice.Application.Services;
 
@@ -50,40 +49,27 @@ public class UserService : BaseService, IUserService
                 return Result<int>.Failure("Email already exists");
             }
 
-            // Create user entity
+            // Create user entity with profile fields
             var user = new User
             {
-                UserName = request.Username, // Identity uses UserName instead of Username
+                UserName = request.Username,
                 Email = request.Email,
                 RoleId = request.RoleId,
                 Status = UserStatus.Active,
                 EmailConfirmed = true,
+                FullName = request.FullName.Trim(),
+                Gender = request.Gender.ToString(),
+                BirthDate = DateTime.MinValue,
+                Address = request.Address,
+                Bio = string.Empty,
+                Phone = request.Phone,
+                AvatarUrl = string.Empty,
+                PhoneNumber = request.Phone,
                 CreatedDate = DateTime.UtcNow,
-                CreatedBy = UserName ?? "System"
             };
 
             // Create user with password
             await _userRepository.CreateAsync(user, request.Password);
-
-            // Create profile
-            var profile = new ProfileEntity
-            {
-                UserId = user.Id,
-                Fullname = $"{request.FirstName} {request.LastName}".Trim(),
-                Email = request.Email,
-                Gender = request.Gender.ToString(),
-                BirthDate = DateTime.MinValue, // Default birth date to avoid null
-                Address = string.Empty, // Use empty string to avoid not-null constraint
-                Bio = string.Empty, // Use empty string to avoid not-null constraint
-                PhoneNumber = string.Empty, // Use empty string to avoid not-null constraint
-                AvatarUrl = string.Empty, // Use empty string to avoid not-null constraint
-                CreatedDate = DateTime.UtcNow,
-                CreatedBy = UserName ?? "System"
-            };
-
-            var profileRepo = _unitOfWork.Repository<ProfileEntity>();
-            await profileRepo.AddAsync(profile);
-            await _unitOfWork.Save(cancellationToken);
 
             LogInformation($"User created successfully with ID: {user.Id}");
             return Result<int>.Success(user.Id, "User created successfully");
@@ -141,39 +127,26 @@ public class UserService : BaseService, IUserService
             if (request.Status.HasValue)
                 user.Status = request.Status.Value;
 
-            user.UpdatedDate = DateTime.UtcNow;
-            user.UpdatedBy = UserName ?? "System";
-
-            // Update profile if FirstName, LastName, or Gender provided
-            if (!string.IsNullOrEmpty(request.FirstName) || !string.IsNullOrEmpty(request.LastName) || request.Gender.HasValue)
+            // Update profile fields if provided
+            if (!string.IsNullOrEmpty(request.FullName))
             {
-                var profile = await _unitOfWork.Repository<ProfileEntity>().Entities
-                    .FirstOrDefaultAsync(p => p.UserId == id, cancellationToken);
-
-                if (profile != null)
-                {
-                    // Update name if provided
-                    if (!string.IsNullOrEmpty(request.FirstName) || !string.IsNullOrEmpty(request.LastName))
-                    {
-                        var nameParts = profile.Fullname?.Split(' ') ?? new string[0];
-                        var firstName = !string.IsNullOrEmpty(request.FirstName) ? request.FirstName : nameParts.FirstOrDefault() ?? "";
-                        var lastName = !string.IsNullOrEmpty(request.LastName) ? request.LastName : nameParts.LastOrDefault() ?? "";
-
-                        profile.Fullname = $"{firstName} {lastName}".Trim();
-                    }
-
-                    // Update gender if provided
-                    if (request.Gender.HasValue)
-                    {
-                        profile.Gender = request.Gender.Value.ToString();
-                    }
-
-                    profile.UpdatedDate = DateTime.UtcNow;
-                    profile.UpdatedBy = UserName ?? "System";
-                }
-
-                await _unitOfWork.Save(cancellationToken);
+                user.FullName = request.FullName.Trim();
             }
+
+            if (request.Gender.HasValue)
+            {
+                user.Gender = request.Gender.Value.ToString();
+            }
+            if (!string.IsNullOrEmpty(request.Phone))
+            {
+                user.PhoneNumber = request.Phone;
+            }
+            if (!string.IsNullOrEmpty(request.Address))
+                user.Address = request.Address;
+
+            user.UpdatedDate = DateTime.UtcNow;
+            await _userRepository.UpdateAsync(user);
+            await _unitOfWork.Save(cancellationToken);
 
             LogInformation($"User updated successfully with ID: {id}");
             return Result<int>.Success(id, "User updated successfully");
@@ -252,26 +225,26 @@ public class UserService : BaseService, IUserService
         }
     }
 
-    public async Task<Result<PaginatedResult<GetUsersWithPaginationDto>>> GetUsersWithPagination(GetUsersWithPaginationQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<GetUsersWithPaginationDto>> GetUsersWithPagination(GetUsersWithPaginationQuery query, CancellationToken cancellationToken)
     {
         try
         {
-            LogInformation($"Getting users with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+            LogInformation($"Getting users with pagination - Page: {query.PageNumber}, Size: {query.PageSize}, Keyword: {query.Keyword}, Status: {query.Status}");
 
-            var users = await _userRepository.GetPagedAsync(query.PageNumber, query.PageSize);
-            var totalCount = await _userRepository.GetCountAsync();
+            var users = await _userRepository.GetPagedWithFilterAsync(query.PageNumber, query.PageSize, query);
+            var totalCount = await _userRepository.GetCountWithFilterAsync(query);
 
             var usersDto = _mapper.Map<List<GetUsersWithPaginationDto>>(users);
 
             var result = PaginatedResult<GetUsersWithPaginationDto>.Create(usersDto, totalCount, query.PageNumber, query.PageSize);
 
             LogInformation($"Retrieved {users.Count} users successfully for page {query.PageNumber}");
-            return Result<PaginatedResult<GetUsersWithPaginationDto>>.Success(result);
+            return result;
         }
         catch (Exception ex)
         {
             LogError("Error getting users with pagination", ex);
-            return Result<PaginatedResult<GetUsersWithPaginationDto>>.Failure("An error occurred while retrieving users");
+            throw new Exception("An error occurred while retrieving user with pagination");
         }
     }
 
@@ -281,7 +254,6 @@ public class UserService : BaseService, IUserService
         {
             LogInformation("Getting current user information");
 
-            // L?y User ID t? JWT token
             var userIdClaim = HttpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))

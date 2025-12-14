@@ -26,6 +26,9 @@ public static class DependencyInjection
         // Register background services
         services.AddHostedService<TokenCleanupService>();
 
+        // Register IHttpContextAccessor to allow audit fields to be populated from current user
+        services.AddHttpContextAccessor();
+
         // Register DbContext (PostgreSQL as default if connection string provided). Ensure you have a connection string named "DefaultConnection" in appsettings.
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (!string.IsNullOrEmpty(connectionString))
@@ -67,6 +70,11 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+        services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        services.AddScoped<IInvoiceLineRepository, InvoiceLineRepository>();
+        services.AddScoped<IInvoiceBatchRepository, InvoiceBatchRepository>();
+        services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
 
         return services;
     }

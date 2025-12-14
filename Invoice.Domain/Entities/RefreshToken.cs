@@ -6,30 +6,31 @@ public class RefreshToken
 {
     [Key]
     public int Id { get; set; }
-    
-    public int UserId { get; set; }
-    
+
+    public int? UserId { get; set; }
+
     [Required]
     [MaxLength(512)]
     public string TokenHash { get; set; } = string.Empty;
-    
+
     public DateTime ExpiresAt { get; set; }
-    
+
     public bool IsRevoked { get; set; } = false;
-    
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     public DateTime? RevokedAt { get; set; }
-    
-    [MaxLength(100)]
+
+    // Increase DeviceInfo maxlength to 500
+    [MaxLength(500)]
     public string? DeviceInfo { get; set; }
-    
+
     [MaxLength(45)]
     public string? IpAddress { get; set; }
-    
+
     // Navigation property
-    public virtual User User { get; set; } = null!;
-    
+    public virtual User? User { get; set; } = null!;
+
     public bool IsExpired => DateTime.UtcNow >= ExpiresAt;
     public bool IsActive => !IsRevoked && !IsExpired;
 }

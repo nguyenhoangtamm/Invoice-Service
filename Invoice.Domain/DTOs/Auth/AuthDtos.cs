@@ -50,6 +50,7 @@ public class RegisterRequest
 
 public class AuthResponse
 {
+    public bool success { get; set; }
     public AuthData Data { get; set; } = new();
     public string Message { get; set; } = string.Empty;
 }

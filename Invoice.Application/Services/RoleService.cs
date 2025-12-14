@@ -2,12 +2,14 @@ using AutoMapper;
 using Invoice.Application.Interfaces;
 using Invoice.Application.Services;
 using Invoice.Domain.DTOs.Requests;
+using Invoice.Domain.DTOs.Responses;
 using Invoice.Domain.Entities;
 using Invoice.Domain.Interfaces;
 using Invoice.Domain.Interfaces.Services;
 using Invoice.Domain.Shares;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -36,7 +38,6 @@ public class RoleService : BaseService, IRoleService
             {
                 Name = request.Name,
                 Description = request.Description,
-                CreatedBy = UserName,
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -73,7 +74,6 @@ public class RoleService : BaseService, IRoleService
 
             role.Name = request.Name;
             role.Description = request.Description;
-            role.UpdatedBy = UserName;
             role.UpdatedDate = DateTime.UtcNow;
 
             var result = await _roleManager.UpdateAsync(role);
@@ -108,7 +108,6 @@ public class RoleService : BaseService, IRoleService
             }
 
             role.IsDeleted = true;
-            role.UpdatedBy = UserName;
             role.UpdatedDate = DateTime.UtcNow;
 
             var result = await _roleManager.UpdateAsync(role);
@@ -137,7 +136,7 @@ public class RoleService : BaseService, IRoleService
             LogInformation($"Getting role with ID: {id}");
 
             var role = await _roleManager.FindByIdAsync(id.ToString());
-            if (role == null || role.IsDeleted)
+            if (role == null)
             {
                 return Result<object>.Failure("Role not found");
             }
@@ -168,8 +167,8 @@ public class RoleService : BaseService, IRoleService
         {
             LogInformation("Getting all roles");
 
+            // Global Query Filter s? t? ??ng lo?i b? các role có IsDeleted = true
             var roles = await _roleManager.Roles
-                .Where(x => !x.IsDeleted)
                 .Select(role => new
                 {
                     role.Id,
@@ -192,54 +191,41 @@ public class RoleService : BaseService, IRoleService
         }
     }
 
-    public async Task<Result<object>> GetRolesWithPagination(GetRolesWithPaginationQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<GetRolesWithPaginationDto>> GetRolesWithPagination(GetRolesWithPaginationQuery query, CancellationToken cancellationToken)
     {
         try
         {
-            LogInformation($"Getting roles with pagination - Page: {query.PageNumber}, Size: {query.PageSize}");
+            LogInformation($"Getting roles with pagination - Page: {query.PageNumber}, Size: {query.PageSize}, KeyWord: {query.KeyWord}");
 
-            var rolesQuery = _roleManager.Roles
-                .Where(x => !x.IsDeleted);
+            var rolesQuery = _roleManager.Roles.AsQueryable();
 
-            if (!string.IsNullOrEmpty(query.SearchTerm))
+            // Apply search filter
+            if (!string.IsNullOrWhiteSpace(query.KeyWord))
             {
-                rolesQuery = rolesQuery.Where(x => x.Name!.Contains(query.SearchTerm) ||
-                                                   x.Description.Contains(query.SearchTerm));
+                var searchTerm = query.KeyWord.Trim().ToLower();
+                rolesQuery = rolesQuery.Where(r =>
+                    r.Name.ToLower().Contains(searchTerm) ||
+                    r.Description.ToLower().Contains(searchTerm));
             }
 
             var totalCount = await rolesQuery.CountAsync(cancellationToken);
-            var totalPages = (int)Math.Ceiling((double)totalCount / query.PageSize);
 
             var roles = await rolesQuery
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
-                .Select(role => new
-                {
-                    role.Id,
-                    role.Name,
-                    role.Description,
-                    role.CreatedBy,
-                    role.CreatedDate,
-                    role.UpdatedBy,
-                    role.UpdatedDate
-                })
                 .ToListAsync(cancellationToken);
 
-            var result = new
-            {
-                data = roles, // Changed from "Data" to "data" (lowercase)
-                TotalCount = totalCount,
-                TotalPages = totalPages,
-                CurrentPage = query.PageNumber,
-                PageSize = query.PageSize
-            };
+            var rolesDto = _mapper.Map<List<GetRolesWithPaginationDto>>(roles);
 
-            return Result<object>.Success(result, "Roles with pagination retrieved successfully");
+            var result = PaginatedResult<GetRolesWithPaginationDto>.Create(rolesDto, totalCount, query.PageNumber, query.PageSize);
+
+            LogInformation($"Retrieved {roles.Count} roles successfully for page {query.PageNumber}");
+            return result;
         }
         catch (Exception ex)
         {
             LogError("Error getting roles with pagination", ex);
-            return Result<object>.Failure("An error occurred while retrieving roles");
+            throw new Exception("An error occurred while retrieving user with pagination");
         }
     }
 }

@@ -7,6 +7,7 @@ namespace Invoice.Domain.Interfaces.Services;
 public interface IMenuService
 {
     Task<Result<List<MenuResponse>>> GetAll(CancellationToken cancellationToken);
+    Task<PaginatedResult<MenuResponse>> GetWithPagination(GetMenuWithPagination request, CancellationToken cancellationToken);
     Task<Result<MenuResponse>> GetById(int id, CancellationToken cancellationToken);
     Task<Result<List<MenuTreeResponse>>> GetMenuTree(CancellationToken cancellationToken);
     Task<Result<List<MenuTreeResponse>>> GetMenuTreeByRole(int roleId, CancellationToken cancellationToken);

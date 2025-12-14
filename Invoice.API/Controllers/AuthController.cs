@@ -1,4 +1,4 @@
-using Invoice.Application.Services;
+Ôªøusing Invoice.Application.Services;
 using Invoice.Domain.DTOs.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,9 +20,9 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-     if (!ModelState.IsValid)
-    {
-  return BadRequest(ModelState);
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
         }
 
         // Get device info and IP address for security tracking
@@ -33,45 +33,46 @@ public class AuthController : ControllerBase
 
         if (!result.IsSuccess)
         {
-      return BadRequest(new AuthResponse
-        {
+            return BadRequest(new AuthResponse
+            {
                 Data = new AuthData(),
-                Message = result.ErrorMessage ?? "–ang nh?p th?t b?i"
+                Message = result.ErrorMessage ?? "√êang nh?p th?t b?i"
             });
-    }
+        }
 
         var response = new AuthResponse
         {
+            success = result.IsSuccess,
             Data = new AuthData
-   {
-      AccessToken = result.AccessToken!,
-          RefreshToken = result.RefreshToken!,
-       User = new UserInfo
- {
- UserName = result.UserName!,
-   FullName = result.FullName!,
-          Role = result.Role!
-      }
-        },
-            Message = "–ang nh?p th‡nh cÙng"
+            {
+                AccessToken = result.AccessToken!,
+                RefreshToken = result.RefreshToken!,
+                User = new UserInfo
+                {
+                    UserName = result.UserName!,
+                    FullName = result.FullName!,
+                    Role = result.Role!
+                }
+            },
+            Message = "ƒêƒÉng nh·∫≠p th√†nh c√¥ng"
         };
 
         return Ok(response);
     }
 
- [HttpPost("register")]
+    [HttpPost("register")]
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         if (!ModelState.IsValid)
         {
-    return BadRequest(ModelState);
+            return BadRequest(ModelState);
         }
 
         var result = await _authService.RegisterAsync(
-  request.Email, 
-      request.Password, 
-            request.UserName, 
+  request.Email,
+      request.Password,
+            request.UserName,
   request.Fullname,
      request.Gender,
             request.BirthDate,
@@ -82,27 +83,28 @@ public class AuthController : ControllerBase
 
         if (!result.IsSuccess)
         {
-       return BadRequest(new AuthResponse
-     {
-      Data = new AuthData(),
-         Message = result.ErrorMessage ?? "–ang k˝ th?t b?i"
-});
+            return BadRequest(new AuthResponse
+            {
+                Data = new AuthData(),
+                Message = result.ErrorMessage ?? "√êang k√Ω th?t b?i"
+            });
         }
 
-var response = new AuthResponse
-   {
-     Data = new AuthData
-       {
-           AccessToken = result.AccessToken!,
-                RefreshToken = result.RefreshToken!,
-           User = new UserInfo
+        var response = new AuthResponse
         {
-         UserName = result.UserName!,
-          FullName = result.FullName!,
-          Role = result.Role!
-           }
-   },
-       Message = "–ang k˝ th‡nh cÙng"
+            success = true,
+            Data = new AuthData
+            {
+                AccessToken = result.AccessToken!,
+                RefreshToken = result.RefreshToken!,
+                User = new UserInfo
+                {
+                    UserName = result.UserName!,
+                    FullName = result.FullName!,
+                    Role = result.Role!
+                }
+            },
+            Message = "√êang k√Ω th√†nh c√¥ng"
         };
 
         return Ok(response);
@@ -113,50 +115,50 @@ var response = new AuthResponse
     public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        
+
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
-     }
+        }
 
-      // Get access token from Authorization header for blacklisting
+        // Get access token from Authorization header for blacklisting
         var accessToken = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
 
         var result = await _authService.LogoutAsync(userId, accessToken);
 
-if (!result)
+        if (!result)
         {
-     return BadRequest(new { message = "–ang xu?t th?t b?i" });
+            return BadRequest(new { message = "√êang xu?t th?t b?i" });
         }
 
-        return Ok(new { message = "–ang xu?t th‡nh cÙng" });
+        return Ok(new { message = "√êang xu?t th√†nh c√¥ng" });
     }
 
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetCurrentUser()
     {
-      var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
-    }
+        }
 
-  var user = await _authService.GetUserByIdAsync(userId);
+        var user = await _authService.GetUserByIdAsync(userId);
 
         if (user == null)
         {
-         return NotFound(new { message = "KhÙng tÏm th?y ngu?i d˘ng" });
+            return NotFound(new { message = "Kh√¥ng t√¨m th?y ngu?i d√πng" });
         }
 
-    return Ok(new
+        return Ok(new
         {
-   id = user.Id,
-     userName = user.UserName,
+            id = user.Id,
+            userName = user.UserName,
             email = user.Email,
             roleId = user.RoleId,
-      status = user.Status
+            status = user.Status
         });
     }
 
@@ -165,35 +167,36 @@ if (!result)
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
     {
         if (!ModelState.IsValid)
-    {
+        {
             return BadRequest(ModelState);
         }
 
         var result = await _authService.RefreshTokenAsync(request.RefreshToken);
 
-     if (!result.IsSuccess)
-   {
-         return BadRequest(new AuthResponse
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new AuthResponse
             {
-          Data = new AuthData(),
-           Message = result.ErrorMessage ?? "L‡m m?i token th?t b?i"
-     });
+                Data = new AuthData(),
+                Message = result.ErrorMessage ?? "L√†m m?i token th?t b?i"
+            });
         }
 
         var response = new AuthResponse
- {
+        {
+            success = true,
             Data = new AuthData
-    {
-         AccessToken = result.AccessToken!,
-    RefreshToken = result.RefreshToken!,
-            User = new UserInfo
-    {
-             UserName = result.UserName!,
-         FullName = result.FullName!,
- Role = result.Role!
-           }
- },
-            Message = "L‡m m?i token th‡nh cÙng"
+            {
+                AccessToken = result.AccessToken!,
+                RefreshToken = result.RefreshToken!,
+                User = new UserInfo
+                {
+                    UserName = result.UserName!,
+                    FullName = result.FullName!,
+                    Role = result.Role!
+                }
+            },
+            Message = "L√†m m?i token th√†nh c√¥ng"
         };
 
         return Ok(response);

@@ -12,6 +12,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         // Identity already configures the table name as "AspNetUsers", we can override it
         builder.ToTable("Users");
 
+        builder.Property(e => e.FullName)
+            .HasMaxLength(200);
+
         // Configure additional properties (Identity already handles UserName, Email, PasswordHash, etc.)
         builder.Property(e => e.Status)
             .IsRequired()
@@ -38,6 +41,27 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .WithMany(r => r.Users)
             .HasForeignKey(e => e.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(e => e.Organizations)
+            .WithOne(o => o.User)
+            .HasForeignKey(o => o.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // 1 user -> many issued invoices
+        builder.HasMany(e => e.IssuedInvoices)
+            .WithOne(inv => inv.IssuedByUser)
+            .HasForeignKey(inv => inv.IssuedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasMany(e => e.RefreshTokens)
+            .WithOne(rt => rt.User)
+            .HasForeignKey(rt => rt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(e => e.TokenBlacklists)
+            .WithOne(tb => tb.User)
+            .HasForeignKey(tb => tb.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 
