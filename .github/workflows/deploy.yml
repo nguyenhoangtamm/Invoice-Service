@@ -142,38 +142,34 @@ jobs:
                       git status
 
                       echo "=========================================="
-                      echo "Creating .env file with configuration"
+                      echo "Setting environment variables"
                       echo "=========================================="
 
-                      cat > "$CHECKOUT_FOLDER/.env" << 'ENVFILE'
-                      ASPNETCORE_ENVIRONMENT=$ASPNETCORE_ENVIRONMENT
-                      APP_PORT=$APP_PORT
-                      DB_HOST=$DB_HOST
-                      DB_PORT=$DB_PORT
-                      DB_NAME=$DB_NAME
-                      DB_USER=$DB_USER
-                      DB_PASSWORD=$DB_PASSWORD
-                      JWT_KEY=$JWT_KEY
-                      JWT_ISSUER=$JWT_ISSUER
-                      JWT_AUDIENCE=$JWT_AUDIENCE
-                      JWT_EXPIRES_IN_MINUTES=$JWT_EXPIRES_IN_MINUTES
-                      BLOCKCHAIN_RPC_URL=$BLOCKCHAIN_RPC_URL
-                      BLOCKCHAIN_CHAIN_ID=$BLOCKCHAIN_CHAIN_ID
-                      BLOCKCHAIN_PRIVATE_KEY=$BLOCKCHAIN_PRIVATE_KEY
-                      BLOCKCHAIN_CONTRACT_ADDRESS=$BLOCKCHAIN_CONTRACT_ADDRESS
-                      EMAIL_SMTP_HOST=$EMAIL_SMTP_HOST
-                      EMAIL_SMTP_PORT=$EMAIL_SMTP_PORT
-                      EMAIL_SMTP_USERNAME=$EMAIL_SMTP_USERNAME
-                      EMAIL_SMTP_PASSWORD=$EMAIL_SMTP_PASSWORD
-                      EMAIL_SENDER=$EMAIL_SENDER
-                      EMAIL_SENDER_NAME=$EMAIL_SENDER_NAME
-                      GOOGLE_DRIVE_CREDENTIALS_PATH=$GOOGLE_DRIVE_CREDENTIALS_PATH
-                      GOOGLE_DRIVE_FOLDER_ID=$GOOGLE_DRIVE_FOLDER_ID
-                      ENVFILE
+                      export ASPNETCORE_ENVIRONMENT="$ASPNETCORE_ENVIRONMENT"
+                      export APP_PORT="$APP_PORT"
+                      export DB_HOST="$DB_HOST"
+                      export DB_PORT="$DB_PORT"
+                      export DB_NAME="$DB_NAME"
+                      export DB_USER="$DB_USER"
+                      export DB_PASSWORD="$DB_PASSWORD"
+                      export JWT_KEY="$JWT_KEY"
+                      export JWT_ISSUER="$JWT_ISSUER"
+                      export JWT_AUDIENCE="$JWT_AUDIENCE"
+                      export JWT_EXPIRES_IN_MINUTES="$JWT_EXPIRES_IN_MINUTES"
+                      export BLOCKCHAIN_RPC_URL="$BLOCKCHAIN_RPC_URL"
+                      export BLOCKCHAIN_CHAIN_ID="$BLOCKCHAIN_CHAIN_ID"
+                      export BLOCKCHAIN_PRIVATE_KEY="$BLOCKCHAIN_PRIVATE_KEY"
+                      export BLOCKCHAIN_CONTRACT_ADDRESS="$BLOCKCHAIN_CONTRACT_ADDRESS"
+                      export EMAIL_SMTP_HOST="$EMAIL_SMTP_HOST"
+                      export EMAIL_SMTP_PORT="$EMAIL_SMTP_PORT"
+                      export EMAIL_SMTP_USERNAME="$EMAIL_SMTP_USERNAME"
+                      export EMAIL_SMTP_PASSWORD="$EMAIL_SMTP_PASSWORD"
+                      export EMAIL_SENDER="$EMAIL_SENDER"
+                      export EMAIL_SENDER_NAME="$EMAIL_SENDER_NAME"
+                      export GOOGLE_DRIVE_CREDENTIALS_PATH="$GOOGLE_DRIVE_CREDENTIALS_PATH"
+                      export GOOGLE_DRIVE_FOLDER_ID="$GOOGLE_DRIVE_FOLDER_ID"
 
-                      echo "✅ .env file created successfully"
-                      echo "Verifying .env file:"
-                      cat "$CHECKOUT_FOLDER/.env" | head -5
+                      echo "✅ Environment variables set successfully"
 
                       echo "=========================================="
                       echo "Building and Starting Containers"
