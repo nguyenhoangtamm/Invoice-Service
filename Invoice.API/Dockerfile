@@ -4,25 +4,25 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy solution and project files
-COPY ["../Invoice.sln", "./"]
-COPY ["../Invoice.Domain/Invoice.Domain.csproj", "../Invoice.Domain/"]
-COPY ["../Invoice.Application/Invoice.Application.csproj", "../Invoice.Application/"]
-COPY ["../Invoice.Infrastructure/Invoice.Infrastructure.csproj", "../Invoice.Infrastructure/"]
-COPY ["Invoice.API.csproj", "./"]
+COPY ["Invoice.sln", "./"]
+COPY ["Invoice.Domain/Invoice.Domain.csproj", "Invoice.Domain/"]
+COPY ["Invoice.Application/Invoice.Application.csproj", "Invoice.Application/"]
+COPY ["Invoice.Infrastructure/Invoice.Infrastructure.csproj", "Invoice.Infrastructure/"]
+COPY ["Invoice.API/Invoice.API.csproj", "Invoice.API/"]
 
 # Restore dependencies
-RUN dotnet restore "../Invoice.sln"
+RUN dotnet restore "Invoice.sln"
 
 # Copy the rest of the source code
-COPY ../. .
+COPY . .
 
 # Build the project
-RUN dotnet build "Invoice.API.csproj" -c Release -o /app/build
+RUN dotnet build "Invoice.API/Invoice.API.csproj" -c Release -o /app/build
 
 # Stage 2: Publish
 FROM build AS publish
 
-RUN dotnet publish "Invoice.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Invoice.API/Invoice.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Stage 3: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
