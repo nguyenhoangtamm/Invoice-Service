@@ -10,7 +10,7 @@ services:
         environment:
             ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
             ASPNETCORE_URLS: http://+:80
-            ConnectionStrings__DefaultConnection: Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};SSL Mode=Require;Trust Server Certificate=true;
+            ConnectionStrings__DefaultConnection: Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};SSL Mode=Disable;
             JwtSettings__Key: ${JWT_KEY}
             JwtSettings__Issuer: ${JWT_ISSUER}
             JwtSettings__Audience: ${JWT_AUDIENCE}
